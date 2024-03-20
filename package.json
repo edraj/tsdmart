@@ -1,0 +1,26 @@
+{
+  "name": "@edraj/tsdmart",
+  "version": "1.0.1",
+  "description": "A TypeScript implementation of the Dmart that depends on axios.",
+  "author": "Kefah T. Issa",
+  "email": "kefah.issa@gmail.com",
+  "license": "AGPL-3.0-or-later",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "devDependencies": {
+    "@types/node": "^20.11.28",
+    "@typescript-eslint/eslint-plugin": "^7.2.0",
+    "@typescript-eslint/parser": "^7.2.0",
+    "eslint": "^8.57.0",
+    "ts-node": "^10.9.2",
+    "tsconfig-paths": "^4.2.0",
+    "tslib": "^2.6.2",
+    "typescript": "^5.4.2"
+  },
+  "dependencies": {
+    "axios": "^1.6.8"
+  }
+}
