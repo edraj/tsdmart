@@ -318,7 +318,7 @@ type ApiQueryResponse = ApiResponse & {
     attributes: { total: number; returned: number };
 };
 
-export class Dmart {
+export default class Dmart {
     public static async login(shortname: string, password: string) {
         const { data } = await axios.post<
             ApiResponse & { records: Array<LoginResponseRecord> }
