@@ -319,7 +319,7 @@ type ApiQueryResponse = ApiResponse & {
 };
 
 export class Dmart {
-    public async login(shortname: string, password: string) {
+    public static async login(shortname: string, password: string) {
         const { data } = await axios.post<
             ApiResponse & { records: Array<LoginResponseRecord> }
         >(baseURL + "/user/login", { shortname, password }, { headers });
@@ -332,7 +332,7 @@ export class Dmart {
         return data;
     }
 
-    public async logout() {
+    public static async logout() {
         const { data } = await axios.post<ApiResponse>(
             baseURL + "/user/logout",
             {},
@@ -341,7 +341,7 @@ export class Dmart {
         return data;
     }
 
-    public async create_user(request: any) {
+    public static async create_user(request: any) {
         try {
             const { data } = await axios.post<ActionResponse>(
                 baseURL + "/user/create",
@@ -354,7 +354,7 @@ export class Dmart {
         }
     }
 
-    public async update_user(request: any) {
+    public static async update_user(request: any) {
         try {
             const { data } = await axios.post<ActionResponse>(
                 baseURL + "/user/profile",
@@ -367,7 +367,7 @@ export class Dmart {
         }
     }
 
-    public async check_existing(prop: string, value: string) {
+    public static async check_existing(prop: string, value: string) {
         try {
             const { data } = await axios.get<ResponseEntry>(
                 baseURL +
@@ -380,7 +380,7 @@ export class Dmart {
         }
     }
 
-    public async get_profile() {
+    public static async get_profile() {
         try {
             const { data } = await axios.get<ProfileResponse>(
                 baseURL + "/user/profile",
@@ -404,7 +404,7 @@ export class Dmart {
         }
     }
 
-    public async query(query: QueryRequest): Promise<ApiQueryResponse|null> {
+    public static async query(query: QueryRequest): Promise<ApiQueryResponse|null> {
         try {
             if (query.type != QueryType.spaces) {
                 query.sort_type = query.sort_type || SortyType.ascending;
@@ -422,7 +422,7 @@ export class Dmart {
         }
     }
 
-    public async csv(query: any): Promise<ApiQueryResponse> {
+    public static async csv(query: any): Promise<ApiQueryResponse> {
         try {
             query.sort_type = query.sort_type || SortyType.ascending;
             query.sort_by = "created_at";
@@ -438,7 +438,7 @@ export class Dmart {
         }
     }
 
-    public async space(action: ActionRequest): Promise<ActionResponse> {
+    public static async space(action: ActionRequest): Promise<ActionResponse> {
         try {
             const { data } = await axios.post<ActionResponse>(
                 baseURL + "/managed/space",
@@ -451,7 +451,7 @@ export class Dmart {
         }
     }
 
-    public async request(action: ActionRequest): Promise<ActionResponse> {
+    public static async request(action: ActionRequest): Promise<ActionResponse> {
         try {
             const { data } = await axios.post<ActionResponse>(
                 baseURL + "/managed/request",
@@ -464,7 +464,7 @@ export class Dmart {
         }
     }
 
-    public async retrieve_entry(
+    public static async retrieve_entry(
         resource_type: ResourceType,
         space_name: string,
         subpath: string,
@@ -489,7 +489,7 @@ export class Dmart {
         }
     }
 
-    public async upload_with_payload(
+    public static async upload_with_payload(
         space_name: string,
         subpath: string,
         shortname: string,
@@ -535,7 +535,7 @@ export class Dmart {
     }
 
 
-    public async fetchDataAsset(
+    public static async fetchDataAsset(
         resourceType: string,  // Replace with actual type if needed
         dataAssetType: string,  // Replace with actual type if needed
         spaceName: string,
@@ -569,7 +569,7 @@ export class Dmart {
         }
     }
 
-    public async get_spaces(): Promise<ApiResponse | null> {
+    public static async get_spaces(): Promise<ApiResponse | null> {
         return await this.query({
             type: QueryType.spaces,
             space_name: "management",
@@ -579,7 +579,7 @@ export class Dmart {
         });
     }
 
-    public async get_children(
+    public static async get_children(
         space_name: string,
         subpath: string,
         limit: number = 20,
@@ -615,14 +615,14 @@ export class Dmart {
         );
     }
 
-    public async get_space_health(space_name: string) {
+    public static async get_space_health(space_name: string) {
         const { data } = await axios.get<
             ApiQueryResponse & { attributes: { folders_report: Object } }
         >(baseURL + `/managed/health/${space_name}`, { headers });
         return data;
     }
 
-    public async get_attachment_content(
+    public static async get_attachment_content(
         resource_type: string,
         space_name: string,
         subpath: string,
@@ -635,7 +635,7 @@ export class Dmart {
         );
         return data;
     }
-    public async get_payload(
+    public static async get_payload(
         resource_type: string,
         space_name: string,
         subpath: string,
@@ -649,7 +649,7 @@ export class Dmart {
         );
         return data;
     }
-    public async get_payload_content(
+    public static async get_payload_content(
         resource_type: string,
         space_name: string,
         subpath: string,
@@ -664,7 +664,7 @@ export class Dmart {
         return data;
     }
 
-    public async progress_ticket(
+    public static async progress_ticket(
         space_name: string,
         subpath: string,
         shortname: string,
@@ -694,14 +694,14 @@ export class Dmart {
         }
     }
 
-    public async get_manifest() {
+    public static async get_manifest() {
         const { data } = await axios.get<any>(baseURL + `/info/manifest`, {
             headers,
         });
         return data;
     }
 
-    public async get_settings() {
+    public static async get_settings() {
         const { data } = await axios.get<any>(baseURL + `/info/settings`, {
             headers,
         });
