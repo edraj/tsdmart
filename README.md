@@ -2,7 +2,7 @@
 
 A TypeScript implementation of the Dmart that depends on axios.
 
-## APIs 
+## APIs
 
 * `login(shortname: string, password: string) -> Promise<ApiResponse>` - Performs a login action.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
@@ -25,5 +25,6 @@ A TypeScript implementation of the Dmart that depends on axios.
 * `get_payload(resource_type: string, space_name: string, subpath: string, shortname: string, ext: string = ".json") -> Promise<any>` - Gets the payload of a resource.
 * `get_payload_content(resource_type: string, space_name: string, subpath: string, shortname: string, ext: string = ".json") -> Promise<any>` - Gets the content of a payload.
 * `progress_ticket(space_name: string, subpath: string, shortname: string, action: string, resolution?: string, comment?: string) -> Promise<ApiQueryResponse & { attributes: { folders_report: Object } }>` - Performs a progress ticket action.
+* `submit(spaceName: string,  schemaShortname: string,  subpath: string,  record: any)  -> Promise<any>`  - Submits a record (log/feedback) to Dmart.
 * `get_manifest() -> Promise<any>` - Gets the manifest of the current instance.
 * `get_settings() -> Promise<any>` - Gets the settings of the current instance.
