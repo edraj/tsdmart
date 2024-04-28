@@ -1,7 +1,6 @@
 import axios from "axios";
 
 
-
 axios.defaults.withCredentials = true;
 
 export enum Status {
@@ -222,6 +221,7 @@ export enum ContentType {
     sqlite = "sqlite",
     parquet = "parquet",
 }
+
 export enum ContentTypeMedia {
     text = "text",
     html = "html",
@@ -324,9 +324,9 @@ export default class Dmart {
     static baseURL = "http://localhost:8282";
 
     public static async login(shortname: string, password: string) {
-        const { data } = await axios.post<
+        const {data} = await axios.post<
             ApiResponse & { records: Array<LoginResponseRecord> }
-        >(this.baseURL + "/user/login", { shortname, password }, { headers });
+        >(this.baseURL + "/user/login", {shortname, password}, {headers});
         //console.log(JSON.stringify(data, null, 2));
         // FIXME settins Authorization is only needed when the code is running on the server
         /*headers.Authorization = "";
@@ -337,20 +337,20 @@ export default class Dmart {
     }
 
     public static async logout() {
-        const { data } = await axios.post<ApiResponse>(
+        const {data} = await axios.post<ApiResponse>(
             this.baseURL + "/user/logout",
             {},
-            { headers }
+            {headers}
         );
         return data;
     }
 
     public static async create_user(request: any) {
         try {
-            const { data } = await axios.post<ActionResponse>(
+            const {data} = await axios.post<ActionResponse>(
                 this.baseURL + "/user/create",
                 request,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -360,10 +360,10 @@ export default class Dmart {
 
     public static async update_user(request: any) {
         try {
-            const { data } = await axios.post<ActionResponse>(
+            const {data} = await axios.post<ActionResponse>(
                 this.baseURL + "/user/profile",
                 request,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -373,9 +373,9 @@ export default class Dmart {
 
     public static async check_existing(prop: string, value: string) {
         try {
-            const { data } = await axios.get<ResponseEntry>(
+            const {data} = await axios.get<ResponseEntry>(
                 `${this.baseURL}/user/check-existing?${prop}=${value}`,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -385,7 +385,7 @@ export default class Dmart {
 
     public static async get_profile() {
         try {
-            const { data } = await axios.get<ProfileResponse>(
+            const {data} = await axios.get<ProfileResponse>(
                 this.baseURL + "/user/profile",
                 {
                     headers,
@@ -407,17 +407,17 @@ export default class Dmart {
         }
     }
 
-    public static async query(query: QueryRequest): Promise<ApiQueryResponse|null> {
+    public static async query(query: QueryRequest, scope: string = "managed"): Promise<ApiQueryResponse | null> {
         try {
             if (query.type != QueryType.spaces) {
                 query.sort_type = query.sort_type || SortyType.ascending;
                 query.sort_by = query.sort_by || "created_at";
             }
             query.subpath = query.subpath.replace(/\/+/g, "/");
-            const { data } = await axios.post<ApiQueryResponse>(
-                this.baseURL + "/managed/query",
+            const {data} = await axios.post<ApiQueryResponse>(
+                this.baseURL + `/${scope}/query`,
                 query,
-                { headers , timeout: 3000 }
+                {headers, timeout: 3000}
             );
             return data;
         } catch (e) {
@@ -430,10 +430,10 @@ export default class Dmart {
             query.sort_type = query.sort_type || SortyType.ascending;
             query.sort_by = "created_at";
             query.subpath = query.subpath.replace(/\/+/g, "/");
-            const { data } = await axios.post<ApiQueryResponse>(
+            const {data} = await axios.post<ApiQueryResponse>(
                 this.baseURL + "/managed/csv",
                 query,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -443,10 +443,10 @@ export default class Dmart {
 
     public static async space(action: ActionRequest): Promise<ActionResponse> {
         try {
-            const { data } = await axios.post<ActionResponse>(
+            const {data} = await axios.post<ActionResponse>(
                 this.baseURL + "/managed/space",
                 action,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -456,10 +456,10 @@ export default class Dmart {
 
     public static async request(action: ActionRequest): Promise<ActionResponse> {
         try {
-            const { data } = await axios.post<ActionResponse>(
+            const {data} = await axios.post<ActionResponse>(
                 this.baseURL + "/managed/request",
                 action,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -474,16 +474,17 @@ export default class Dmart {
         shortname: string,
         retrieve_json_payload: boolean = false,
         retrieve_attachments: boolean = false,
-        validate_schema: boolean = true
-    ): Promise<ResponseEntry|null> {
+        validate_schema: boolean = true,
+        scope: string = "managed"
+    ): Promise<ResponseEntry | null> {
         try {
             if (!subpath || subpath == "/") subpath = "__root__";
-            const { data } = await axios.get<ResponseEntry>(
-                `${this.baseURL}/managed/entry/${resource_type}/${space_name}/${subpath}/${shortname}?retrieve_json_payload=${retrieve_json_payload}&retrieve_attachments=${retrieve_attachments}&validate_schema=${validate_schema}`.replace(
+            const {data} = await axios.get<ResponseEntry>(
+                `${this.baseURL}/${scope}/entry/${resource_type}/${space_name}/${subpath}/${shortname}?retrieve_json_payload=${retrieve_json_payload}&retrieve_attachments=${retrieve_attachments}&validate_schema=${validate_schema}`.replace(
                     /\/+/g,
                     "/"
                 ),
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -500,16 +501,16 @@ export default class Dmart {
         content_type?: ContentType,
         schema_shortname?: string
     ): Promise<ApiResponse> {
-        const request_record_body:any = {
+        const request_record_body: any = {
             resource_type,
             subpath,
             shortname,
-            attributes: { is_active: true, payload: {body:{}} },
+            attributes: {is_active: true, payload: {body: {}}},
         };
-        if (content_type){
+        if (content_type) {
             request_record_body.attributes.payload.content_type = content_type;
         }
-        if (schema_shortname){
+        if (schema_shortname) {
             request_record_body.attributes.payload.schema_shortname = schema_shortname;
         }
 
@@ -517,7 +518,7 @@ export default class Dmart {
             [
                 JSON.stringify(request_record_body),
             ],
-            { type: "application/json" }
+            {type: "application/json"}
         );
 
         const form_data = new FormData();
@@ -525,12 +526,12 @@ export default class Dmart {
         form_data.append("request_record", request_record);
         form_data.append("payload_file", payload_file);
 
-        const headers = { "Content-Type": "multipart/form-data" };
+        const headers = {"Content-Type": "multipart/form-data"};
 
-        const { data } = await axios.post<ApiResponse>(
+        const {data} = await axios.post<ApiResponse>(
             this.baseURL + "/managed/resource_with_payload",
             form_data,
-            { headers }
+            {headers}
         );
 
         return data;
@@ -549,7 +550,7 @@ export default class Dmart {
     ) {
         try {
             const url = `${this.baseURL}/managed/data-asset`;
-            const { data } = await axios.post(
+            const {data} = await axios.post(
                 url,
                 {
                     space_name: spaceName,
@@ -561,7 +562,7 @@ export default class Dmart {
                     filter_data_assets,
                     branch_name,
                 },
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -604,10 +605,11 @@ export default class Dmart {
         subpath: string,
         parent_shortname: string,
         shortname: string,
-        ext: string
+        ext: string,
+        scope: string = "managed"
     ) {
         return (
-            `${this.baseURL}/managed/payload/${resource_type}/${space_name}/${subpath.replace(
+            `${this.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
                 /\/+$/,
                 ""
             )}/${parent_shortname}/${shortname}.${ext}`.replaceAll("..", ".")
@@ -615,9 +617,9 @@ export default class Dmart {
     }
 
     public static async get_space_health(space_name: string) {
-        const { data } = await axios.get<
+        const {data} = await axios.get<
             ApiQueryResponse & { attributes: { folders_report: Object } }
-        >(this.baseURL + `/managed/health/${space_name}`, { headers });
+        >(this.baseURL + `/managed/health/${space_name}`, {headers});
         return data;
     }
 
@@ -626,36 +628,41 @@ export default class Dmart {
         space_name: string,
         subpath: string,
         shortname: string,
+        scope: string = "managed"
     ) {
-        const { data } = await axios.get<any>(
-            `${this.baseURL}/managed/payload/${resource_type}/${space_name}/${subpath}/${shortname}`,
-            { headers }
+        const {data} = await axios.get<any>(
+            `${this.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}`,
+            {headers}
         );
         return data;
     }
+
     public static async get_payload(
         resource_type: string,
         space_name: string,
         subpath: string,
         shortname: string,
-        ext: string = ".json"
+        ext: string = ".json",
+        scope: string = "managed"
     ) {
-        const { data } = await axios.get<any>(
-            `${this.baseURL}/managed/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
-            { headers }
+        const {data} = await axios.get<any>(
+            `${this.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
+            {headers}
         );
         return data;
     }
+
     public static async get_payload_content(
         resource_type: string,
         space_name: string,
         subpath: string,
         shortname: string,
-        ext: string = ".json"
+        ext: string = ".json",
+        scope: string = "managed"
     ) {
-        const { data } = await axios.get<any>(
-            `${this.baseURL}/managed/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
-            { headers }
+        const {data} = await axios.get<any>(
+            `${this.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
+            {headers}
         );
         return data;
     }
@@ -670,18 +677,18 @@ export default class Dmart {
     ) {
         try {
             const payload: any = {}
-            if(resolution){
+            if (resolution) {
                 payload.resolution = resolution;
             }
-            if(comment){
+            if (comment) {
                 payload.comment = comment;
             }
-            const { data } = await axios.put<
+            const {data} = await axios.put<
                 ApiQueryResponse & { attributes: { folders_report: Object } }
             >(
                 `${this.baseURL}/managed/progress-ticket/${space_name}/${subpath}/${shortname}/${action}`,
                 payload,
-                { headers }
+                {headers}
             );
             return data;
         } catch (error: any) {
@@ -694,7 +701,7 @@ export default class Dmart {
         schemaShortname: string,
         subpath: string,
         record: any // More general than Map<String, dynamic>
-    ){
+    ) {
         try {
             const {data} = await axios.post(
                 `${this.baseURL}/public/submit/${spaceName}/${schemaShortname}/${subpath}`,
@@ -708,14 +715,14 @@ export default class Dmart {
     }
 
     public static async get_manifest() {
-        const { data } = await axios.get<any>(this.baseURL + `/info/manifest`, {
+        const {data} = await axios.get<any>(this.baseURL + `/info/manifest`, {
             headers,
         });
         return data;
     }
 
     public static async get_settings() {
-        const { data } = await axios.get<any>(this.baseURL + `/info/settings`, {
+        const {data} = await axios.get<any>(this.baseURL + `/info/settings`, {
             headers,
         });
         return data;
