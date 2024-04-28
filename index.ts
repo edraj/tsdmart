@@ -605,14 +605,14 @@ export default class Dmart {
         subpath: string,
         parent_shortname: string,
         shortname: string,
-        ext: string,
+        ext: string|null = null,
         scope: string = "managed"
     ) {
         return (
             `${this.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
                 /\/+$/,
                 ""
-            )}/${parent_shortname}/${shortname}.${ext}`.replaceAll("..", ".")
+            )}/${parent_shortname}/${shortname}${ext===null?"":ext}`
         );
     }
 

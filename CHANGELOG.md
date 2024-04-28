@@ -1,4 +1,4 @@
-## 1.0.7
+## 1.0.8
 
 - Implementing DMART apis up to 1.1.12
 
