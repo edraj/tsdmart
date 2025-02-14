@@ -8,7 +8,7 @@ export enum Status {
     failed = "failed",
 }
 
-type Error = {
+export type Error = {
     type: string;
     code: number;
     message: string;
@@ -29,19 +29,19 @@ export type ApiResponse = {
     records: Array<ApiResponseRecord>;
 };
 
-type Translation = {
+export type Translation = {
     ar: string;
     en: string;
     kd: string;
 };
 
-enum UserType {
+export enum UserType {
     web = "web",
     mobile = "mobile",
     bot = "bot",
 }
 
-type LoginResponseRecord = ApiResponseRecord & {
+export type LoginResponseRecord = ApiResponseRecord & {
     attributes: {
         access_token: string;
         type: UserType;
@@ -51,14 +51,14 @@ type LoginResponseRecord = ApiResponseRecord & {
 
 // type LoginResponse = ApiResponse  & { records : Array<LoginResponseRecord> };
 
-type Permission = {
+export type Permission = {
     allowed_actions: Array<ActionType>;
     conditions: Array<string>;
     restricted_fields: Array<any>;
     allowed_fields_values: Map<string, any>;
 };
 
-enum Language {
+export enum Language {
     arabic = "arabic",
     english = "engligh",
     kurdish = "kurdish",
@@ -66,7 +66,7 @@ enum Language {
     turkish = "turkish",
 }
 
-type ProfileResponseRecord = ApiResponseRecord & {
+export type ProfileResponseRecord = ApiResponseRecord & {
     attributes: {
         email: string;
         displayname: Translation;
@@ -233,7 +233,7 @@ export enum ContentTypeMedia {
     video = "video",
 }
 
-type Payload = {
+export type Payload = {
     content_type: ContentType;
     schema_shortname?: string;
     checksum: string;
@@ -242,7 +242,7 @@ type Payload = {
     validation_status: "valid" | "invalid";
 };
 
-type MetaExtended = {
+export type MetaExtended = {
     email: string;
     msisdn: string;
     is_email_verified: boolean;
@@ -300,7 +300,7 @@ export type ActionResponse = ApiResponse & {
     >;
 };
 
-type ActionRequestRecord = {
+export type ActionRequestRecord = {
     resource_type: ResourceType;
     uuid?: string;
     shortname: string;
@@ -316,7 +316,7 @@ export type ActionRequest = {
 };
 
 
-type ApiQueryResponse = ApiResponse & {
+export type ApiQueryResponse = ApiResponse & {
     attributes: { total: number; returned: number };
 };
 
