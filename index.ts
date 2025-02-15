@@ -327,12 +327,13 @@ export default class Dmart {
         const {data} = await axios.post<
             ApiResponse & { records: Array<LoginResponseRecord> }
         >(this.baseURL + "/user/login", {shortname, password}, {headers});
-        //console.log(JSON.stringify(data, null, 2));
-        // FIXME settins Authorization is only needed when the code is running on the server
-        /*headers.Authorization = "";
-        if (data.status == Status.success && data.records.length > 0) {
-          headers.Authorization = "Bearer " + data.records[0].attributes.access_token;
-        }*/
+        return data;
+    }
+
+    public static async loginBy(credentials: any, password: string) {
+        const {data} = await axios.post<
+            ApiResponse & { records: Array<LoginResponseRecord> }
+        >(this.baseURL + "/user/login", {...credentials, password}, {headers});
         return data;
     }
 
