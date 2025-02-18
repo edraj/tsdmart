@@ -121,6 +121,8 @@ export enum QueryType {
     spaces = "spaces",
     counters = "counters",
     reports = "reports",
+    attachments = "attachments",
+    attachments_aggregation = "attachments_aggregation"
 }
 
 export enum SortyType {

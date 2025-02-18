@@ -5,7 +5,7 @@ A TypeScript implementation of the Dmart that depends on axios.
 ## APIs
 
 * `login(shortname: string, password: string) -> Promise<ApiResponse>` - Performs a login action (shortname).
-* `loginBy(credentials: string, password: string) -> Promise<ApiResponse>` - Performs a login action but altering the default identifier that you can customise .
+* `loginBy(credentials: dict, password: string) -> Promise<ApiResponse>` - Performs a login action but altering the default identifier that you can customise.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
 * `create_user(request: any) -> Promise<ActionResponse>` - Creates a new user.
 * `update_user(request: any) -> Promise<ActionResponse>` - Updates an existing user.
