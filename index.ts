@@ -188,6 +188,7 @@ export enum ResourceType {
     content = "content",
     acl = "acl",
     comment = "comment",
+    reaction = "reaction",
     media = "media",
     locator = "locator",
     relationship = "relationship",
