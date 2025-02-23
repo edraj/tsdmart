@@ -483,9 +483,9 @@ export default class Dmart {
     ): Promise<ResponseEntry | null> {
         try {
             if (!subpath || subpath == "/") subpath = "__root__";
-            const url = `${this.baseURL}/${scope}/entry/${resource_type}/${space_name}/${subpath}/${shortname}?retrieve_json_payload=${retrieve_json_payload}&retrieve_attachments=${retrieve_attachments}&validate_schema=${validate_schema}`;
+            const url = `${scope}/entry/${resource_type}/${space_name}/${subpath}/${shortname}?retrieve_json_payload=${retrieve_json_payload}&retrieve_attachments=${retrieve_attachments}&validate_schema=${validate_schema}`;
             const {data} = await axios.get<ResponseEntry>(
-                url.replace(/\/+/g, "/"),
+                `${this.baseURL}/${url.replace(/\/+/g, "/")}`,
                 {headers}
             );
             return data;
