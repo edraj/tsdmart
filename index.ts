@@ -333,7 +333,7 @@ export default class Dmart {
             >(`${this.baseURL}/user/login`, {shortname, password}, {headers});
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -344,7 +344,7 @@ export default class Dmart {
             >(`${this.baseURL}/user/login`, {...credentials, password}, {headers});
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -357,7 +357,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -370,7 +370,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -383,7 +383,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -395,7 +395,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -419,7 +419,7 @@ export default class Dmart {
             }
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -437,7 +437,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -453,7 +453,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -466,7 +466,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -479,7 +479,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -502,7 +502,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -551,7 +551,7 @@ export default class Dmart {
 
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -584,7 +584,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -641,7 +641,7 @@ export default class Dmart {
             >(`${this.baseURL}/managed/health/${space_name}`, {headers});
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -659,7 +659,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -678,7 +678,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -697,7 +697,7 @@ export default class Dmart {
             );
             return data;
         }catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -726,7 +726,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -744,7 +744,7 @@ export default class Dmart {
             );
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -755,7 +755,7 @@ export default class Dmart {
             });
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 
@@ -766,7 +766,7 @@ export default class Dmart {
             });
             return data;
         } catch (error: any) {
-            throw new Error(error.response.data)
+            throw error.response.data
         }
     }
 }
