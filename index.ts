@@ -49,7 +49,7 @@ export type LoginResponseRecord = ApiResponseRecord & {
     };
 };
 
-// type LoginResponse = ApiResponse  & { records : Array<LoginResponseRecord> };
+type LoginResponse = ApiResponse  & { records : Array<LoginResponseRecord> };
 
 export type Permission = {
     allowed_actions: Array<ActionType>;
@@ -94,9 +94,9 @@ export type ProfileResponse = ApiResponse & {
     records: Array<ProfileResponseRecord>;
 };
 
-let headers: { [key: string]: string } = {
+export let headers: { [key: string]: string } = {
     "Content-type": "application/json",
-    //"Authorization": ""
+    "Authorization": ""
 };
 
 export type AggregationReducer = {
@@ -328,9 +328,11 @@ export default class Dmart {
 
     public static async login(shortname: string, password: string) {
         try {
-            const {data} = await axios.post<
-                ApiResponse & { records: Array<LoginResponseRecord> }
-            >(`${this.baseURL}/user/login`, {shortname, password}, {headers});
+            const response = await axios.post<LoginResponse>(`${this.baseURL}/user/login`, {shortname, password}, {headers});
+            const data: LoginResponse = response.data;
+            if (data.status == Status.success && data.records.length > 0) {
+                headers['Authorization'] = "Bearer " + data.records[0].attributes.access_token;
+            }
             return data;
         } catch (error: any) {
             throw error.response.data
@@ -339,9 +341,13 @@ export default class Dmart {
 
     public static async loginBy(credentials: any, password: string) {
         try {
-            const {data} = await axios.post<
-                ApiResponse & { records: Array<LoginResponseRecord> }
-            >(`${this.baseURL}/user/login`, {...credentials, password}, {headers});
+            const response = await axios.post<LoginResponse>(
+                `${this.baseURL}/user/login`, {...credentials, password}, {headers}
+            );
+            const data: LoginResponse = response.data;
+            if (data.status == Status.success && data.records.length > 0) {
+                headers['Authorization'] = "Bearer " + data.records[0].attributes.access_token;
+            }
             return data;
         } catch (error: any) {
             throw error.response.data
