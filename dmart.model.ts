@@ -3,6 +3,17 @@ export enum Status {
   failed = "failed",
 }
 
+export interface ClientError {
+    code: string,
+    status: string,
+    message: string,
+    request?: {
+        url: string, 
+        method: string
+    },
+    response: ApiResponse
+}
+
 export type Error = {
   type: string;
   code: number;
@@ -236,10 +247,10 @@ export enum ContentTypeMedia {
 export type Payload = {
   content_type: ContentType;
   schema_shortname?: string;
-  checksum: string;
+  checksum?: string;
   body: string | Record<string, any> | any;
-  last_validated: string;
-  validation_status: "valid" | "invalid";
+  last_validated?: string;
+  validation_status?: "valid" | "invalid";
 };
 
 export type MetaExtended = {

@@ -4,6 +4,7 @@ import {
     ActionResponse,
     ApiQueryResponse,
     ApiResponse,
+    ClientError,
     ContentType,
     headers,
     LoginResponse,
@@ -16,14 +17,25 @@ import {
     Status,
 } from "./dmart.model";
 
-
 axios.defaults.withCredentials = true;
 axios.defaults.baseURL = "http://localhost:8282";
 
+axios.interceptors.response.use(null, function (error) {
+  // need error.code (enum), error.status (same), error.message (axios)
+  // error.response.data (dmart), error.response.config. method, url,
+  const err: ClientError = {
+    code: error.code,
+    status: error.status,
+    message: error.message,
+    request: {url: error.response?.config?.url, method: error.response?.config?.method},
+    response: error.response?.data
+  }
+  return Promise.reject(err);
+});
 export const dmartClient = axios;
 
 export class Dmart {
-//   static baseURL = "http://localhost:8282";
+  //   static baseURL = "http://localhost:8282";
 
   public static async login(shortname: string, password: string) {
     try {
@@ -114,12 +126,9 @@ export class Dmart {
 
   public static async get_profile() {
     try {
-      const { data } = await axios.get<ProfileResponse>(
-        `user/profile`,
-        {
-          headers,
-        }
-      );
+      const { data } = await axios.get<ProfileResponse>(`user/profile`, {
+        headers,
+      });
       if (typeof localStorage !== "undefined" && data.status === "success") {
         localStorage.setItem(
           "permissions",
@@ -187,16 +196,10 @@ export class Dmart {
   }
 
   public static async request(action: ActionRequest): Promise<ActionResponse> {
-    try {
-      const { data } = await axios.post<ActionResponse>(
-        `managed/request`,
-        action,
-        { headers }
-      );
-      return data;
-    } catch (error: any) {
-      throw error;
-    }
+    const res = await axios.post<ActionResponse>(`managed/request`, action, {
+      headers,
+    });
+    return res?.data;
   }
 
   public static async retrieve_entry(
