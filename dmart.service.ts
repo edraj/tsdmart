@@ -232,7 +232,8 @@ export class Dmart {
     resource_type: ResourceType,
     payload_file: File,
     content_type?: ContentType,
-    schema_shortname?: string
+    schema_shortname?: string,
+    scope: string = "managed"
   ): Promise<ApiResponse> {
     const request_record_body: any = {
       resource_type,
@@ -261,7 +262,7 @@ export class Dmart {
 
     try {
       const { data } = await axios.post<ApiResponse>(
-        `managed/resource_with_payload`,
+        `${scope}/resource_with_payload`,
         form_data,
         { headers }
       );
@@ -279,8 +280,7 @@ export class Dmart {
     subpath: string,
     shortname: string,
     query_string?: string,
-    filter_data_assets?: string[],
-    branch_name?: string
+    filter_data_assets?: string[]
   ) {
     try {
       const url = `managed/data-asset`;
@@ -294,7 +294,6 @@ export class Dmart {
           shortname,
           query_string: query_string ?? "SELECT * FROM file",
           filter_data_assets,
-          branch_name,
         },
         { headers }
       );
