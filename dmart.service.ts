@@ -27,9 +27,12 @@ axios.interceptors.response.use(null, function (error) {
     code: error.code,
     status: error.status,
     message: error.message,
-    request: {url: error.response?.config?.url, method: error.response?.config?.method},
-    response: error.response?.data
-  }
+    request: {
+      url: error.response?.config?.url,
+      method: error.response?.config?.method,
+    },
+    response: error.response?.data,
+  };
   return Promise.reject(err);
 });
 export const dmartClient = axios;
@@ -38,21 +41,17 @@ export class Dmart {
   //   static baseURL = "http://localhost:8282";
 
   public static async login(shortname: string, password: string) {
-    try {
-      const response = await axios.post<LoginResponse>(
-        `user/login`,
-        { shortname, password },
-        { headers }
-      );
-      const data: LoginResponse = response.data;
-      if (data.status == Status.success && data.records.length > 0) {
-        headers["Authorization"] =
-          "Bearer " + data.records[0]?.attributes.access_token;
-      }
-      return data;
-    } catch (error: any) {
-      throw error;
+    const response = await axios.post<LoginResponse>(
+      `user/login`,
+      { shortname, password },
+      { headers }
+    );
+    const data: LoginResponse = response.data;
+    if (data.status == Status.success && data.records.length > 0) {
+      headers["Authorization"] =
+        "Bearer " + data.records[0]?.attributes.access_token;
     }
+    return data;
   }
 
   public static async loginBy(credentials: any, password: string) {
@@ -359,6 +358,7 @@ export class Dmart {
     }
   }
 
+  // TODO: update to enums
   public static async get_attachment_content(
     resource_type: string,
     space_name: string,
