@@ -38,7 +38,7 @@ export type ApiResponse = {
 export type Translation = {
   ar: string;
   en: string;
-  kd: string;
+  ku: string;
 };
 
 export enum UserType {
