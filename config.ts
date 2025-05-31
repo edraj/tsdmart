@@ -1,8 +1,9 @@
 
 export const Config = {
-    defaultApi: '',
-    headers: {
-        "Content-type": "application/json",
-        Authorization: ""
-    }
-}
+  baseURL: "http://localhost:8282",
+  headers: {
+    "Content-type": "application/json",
+    "Authorization": "",
+  },
+};
+
