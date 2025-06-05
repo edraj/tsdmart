@@ -447,11 +447,21 @@ export class Dmart {
     spaceName: string,
     schemaShortname: string,
     subpath: string,
-    record: any
+    record: any,
+    resourceType?: string,
+    workflowShortname?: string,
   ) {
     try {
+      var url = `public/submit/${spaceName}`;
+        if (resourceType) {
+            url += `/${resourceType}`;
+        }
+        if (workflowShortname) {
+            url += `/${workflowShortname}`;
+        }
+        url += `/${schemaShortname}/${subpath}`;
       const { data } = await axios.post(
-        `public/submit/${spaceName}/${schemaShortname}/${subpath}`,
+          url,
         record,
         { headers }
       );
