@@ -12,16 +12,41 @@ export const request = async (
   return res?.data;
 };
 
-// this is useless
+// export const submit = async (
+//   client: AxiosInstance,
+//   spaceName: string,
+//   schemaShortname: string,
+//   subpath: string,
+//   record: any
+// ) => {
+//   const { data } = await client.post(
+//     `public/submit/${spaceName}/${schemaShortname}/${subpath}`,
+//     record,
+//     { headers: Config.headers }
+//   );
+//   return data;
+// };
+
+
 export const submit = async (
   client: AxiosInstance,
   spaceName: string,
   schemaShortname: string,
   subpath: string,
-  record: any
+  record: any,
+  resourceType?: string,
+  workflowShortname?: string,
 ) => {
+  let url = `public/submit/${spaceName}`;
+  if (resourceType) {
+    url += `/${resourceType}`;
+  }
+  if (workflowShortname) {
+    url += `/${workflowShortname}`;
+  }
+  url += `/${schemaShortname}/${subpath}`;
   const { data } = await client.post(
-    `public/submit/${spaceName}/${schemaShortname}/${subpath}`,
+    url,
     record,
     { headers: Config.headers }
   );
