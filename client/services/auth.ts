@@ -1,12 +1,12 @@
 import { AxiosInstance } from "axios";
-import { Config } from '../config';
 import {
   ApiResponse,
   headers,
   LoginResponse,
   ProfileResponse,
   Status,
-} from "../dmart.model";
+} from "../../dmart.model";
+import { Config } from '../config';
 
 export const login = async (
   shortname: string,

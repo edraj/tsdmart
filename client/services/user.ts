@@ -1,6 +1,6 @@
 import { AxiosInstance } from 'axios';
+import { ApiResponse } from '../../dmart.model';
 import { Config } from '../config';
-import { ApiResponse } from '../dmart.model';
 
 export const create_user = async (client: AxiosInstance) => {
   const { data } = await client.post<ApiResponse>(

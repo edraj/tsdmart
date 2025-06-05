@@ -1,14 +1,16 @@
 import axios, { AxiosInstance, CreateAxiosDefaults } from "axios";
-import { Config } from "./config";
 import {
-    ActionRequest,
-    ClientError,
-    ContentType,
-    QueryRequest,
-    ResourceType,
-} from "./dmart.model";
+  ActionRequest,
+  ClientError,
+  ContentType,
+  QueryRequest,
+  ResourceType,
+  ResponseEntry,
+} from "../dmart.model";
+import { Config } from "./config";
+import { IEntryQuery, typeScope } from "./models/ishee.model";
 import { get_profile, login, logout } from "./services/auth";
-import { query, retrieve_entry } from "./services/query";
+import { getEntry, query, retrieve_entry } from "./services/query";
 import { request, submit } from "./services/request";
 import { upload_with_payload } from "./services/upload";
 
@@ -16,7 +18,7 @@ export class DmartClient {
   client: AxiosInstance;
 
   constructor(config: CreateAxiosDefaults) {
-    this.client = axios.create({ ...Config, ...config });
+    this.client = axios.create({ ...Config.client, ...config });
 
     this.client.interceptors.response.use(null, function (error) {
       // need error.code (enum), error.status (same), error.message (axios)
@@ -51,6 +53,9 @@ export class DmartClient {
     return query(this.client, q, scope);
   }
 
+  async getEntry(query: IEntryQuery, scope: typeScope = "managed"): Promise<ResponseEntry | null> {
+    return getEntry(this.client, query, scope); 
+  }
   async retrieve_entry(
     resource_type: ResourceType,
     space_name: string,
@@ -59,7 +64,7 @@ export class DmartClient {
     retrieve_json_payload: boolean = false,
     retrieve_attachments: boolean = false,
     validate_schema: boolean = true,
-    scope: string = "managed"
+    scope: typeScope = "managed"
   ) {
     return retrieve_entry(
       this.client,

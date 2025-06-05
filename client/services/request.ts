@@ -1,6 +1,6 @@
 import { AxiosInstance } from "axios";
+import { ActionRequest, ActionResponse } from "../../dmart.model";
 import { Config } from '../config';
-import { ActionRequest, ActionResponse } from "../dmart.model";
 
 export const request = async (
   client: AxiosInstance,

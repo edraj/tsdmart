@@ -1,5 +1,5 @@
 import { AxiosInstance } from "axios";
-import { ApiResponse, ContentType, ResourceType } from "../dmart.model";
+import { ApiResponse, ContentType, ResourceType } from "../../dmart.model";
 
 export const upload_with_payload = async (
   client: AxiosInstance,
