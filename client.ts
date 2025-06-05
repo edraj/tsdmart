@@ -1,11 +1,11 @@
 import axios, { AxiosInstance, CreateAxiosDefaults } from "axios";
 import { Config } from "./config";
 import {
-    ActionRequest,
-    ClientError,
-    ContentType,
-    QueryRequest,
-    ResourceType,
+  ActionRequest,
+  ClientError,
+  ContentType,
+  QueryRequest,
+  ResourceType,
 } from "./dmart.model";
 import { get_profile, login, logout } from "./services/auth";
 import { query, retrieve_entry } from "./services/query";
@@ -105,8 +105,10 @@ export class DmartClient {
     spaceName: string,
     schemaShortname: string,
     subpath: string,
-    record: any
+    record: any,
+    resourceType?: string,
+    workflowShortname?: string
   ) {
-    return submit(this.client, spaceName, schemaShortname, subpath, record);
+    return submit(this.client, spaceName, schemaShortname, subpath, record, resourceType, workflowShortname);
   }
 }
