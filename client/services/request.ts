@@ -7,29 +7,13 @@ export const request = async (
   action: ActionRequest
 ): Promise<ActionResponse> => {
   const res = await client.post<ActionResponse>(`managed/request`, action, {
-    headers: Config.headers,
+    headers: Config.client.headers,
   });
   return res?.data;
 };
 
-// this is useless
-export const submit_old = async (
-  client: AxiosInstance,
-  spaceName: string,
-  schemaShortname: string,
-  subpath: string,
-  record: any
-) => {
-  const { data } = await client.post(
-    `public/submit/${spaceName}/${schemaShortname}/${subpath}`,
-    record,
-    { headers: Config.client.headers }
-  );
-  return data;
-};
-
-
 export const submit = async (
+  client: AxiosInstance,
   spaceName: string,
   schemaShortname: string,
   subpath: string,
@@ -37,22 +21,18 @@ export const submit = async (
   resourceType?: string,
   workflowShortname?: string,
 ) => {
-  try {
-    var url = `public/submit/${spaceName}`;
-    if (resourceType) {
-      url += `/${resourceType}`;
-    }
-    if (workflowShortname) {
-      url += `/${workflowShortname}`;
-    }
-    url += `/${schemaShortname}/${subpath}`;
-    const { data } = await axios.post(
-      url,
-      record,
-      { headers }
-    );
-    return data;
-  } catch (error: any) {
-    throw error;
+  let url = `public/submit/${spaceName}`;
+  if (resourceType) {
+    url += `/${resourceType}`;
   }
+  if (workflowShortname) {
+    url += `/${workflowShortname}`;
+  }
+  url += `/${schemaShortname}/${subpath}`;
+  const { data } = await client.post(
+    url,
+    record,
+    { headers: Config.client.headers }
+  );
+  return data;
 };

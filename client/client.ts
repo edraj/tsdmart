@@ -110,8 +110,10 @@ export class DmartClient {
     spaceName: string,
     schemaShortname: string,
     subpath: string,
-    record: any
+    record: any,
+    resourceType?: string,
+    workflowShortname?: string
   ) {
-    return submit(this.client, spaceName, schemaShortname, subpath, record);
+    return submit(this.client, spaceName, schemaShortname, subpath, record, resourceType, workflowShortname);
   }
 }
