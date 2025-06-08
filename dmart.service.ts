@@ -358,54 +358,18 @@ export class Dmart {
   }
 
   // TODO: update to enums
-  public static async get_attachment_content(
-    resource_type: string,
-    space_name: string,
-    subpath: string,
-    shortname: string,
-    scope: string = "managed"
-  ) {
-    try {
-      const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}`,
-        { headers }
-      );
-      return data;
-    } catch (error: any) {
-      throw error;
-    }
-  }
-
   public static async get_payload(
     resource_type: string,
     space_name: string,
     subpath: string,
     shortname: string,
+    schemaShortname: string = "",
     ext: string = ".json",
     scope: string = "managed"
   ) {
     try {
       const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
-        { headers }
-      );
-      return data;
-    } catch (error: any) {
-      throw error;
-    }
-  }
-
-  public static async get_payload_content(
-    resource_type: string,
-    space_name: string,
-    subpath: string,
-    shortname: string,
-    ext: string = ".json",
-    scope: string = "managed"
-  ) {
-    try {
-      const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
+        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${schemaShortname}${ext}`,
         { headers }
       );
       return data;
