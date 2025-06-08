@@ -1,32 +1,50 @@
 
 export const Config = {
   client: {
-
     baseURL: "http://localhost:8282",
-    headers: {
-      "Content-type": "application/json",
-      "Authorization": "",
-    }
+    queryTimeout: 3000
+  },
+  Storage: {
+    authKey: "user",
+    Timeout: 24, // hours
+    Key: "dmart.cache",
+    ResetKey: "20250606",
   },
   API: {
     rootPath: '__root__',
     rootSpace: 'management',
     auth: {
       login: '/user/login',
+      logout: '/user/logout',
+      profile: '/user/profile'
     },
-    profile: {
-      details: '/user/profile'
-    }
-    , space: {
-      list: '/:scope/query',
-      details: '/:scope/entry/space/:space/__root__/:space',
-      create: '/:scope/space',
-    }
-    , resource: {
+    resource: {
       query: '/:scope/query',
-      details: '/:scope/entry/:resource/:space/:subpath/:shortname?:options',
+      csv: '/managed/csv',
       request: '/:scope/request',
-      submit: '/:scope/submit'
+      // path is optional
+      submit: '/public/submit/:space/:path:schema/:subpath',
+    },
+    entry: {
+      existing: '/user/check-existing?:options',
+      details: '/:scope/entry/:resource/:space/:subpath/:shortname?:options',
+    },
+    payload: {
+      file: '/:scope/resource_with_payload',
+      files: '/:scope/resource_with_payload',
+      // schema is optional
+      url: '/:scope/payload/:resource/:space/:subpath/:shortname.:schema:ext'
+    },
+    asset: {
+      request: '/managed/data-asset'
+    },
+    info: {
+      health: '/managed/health/:space',
+      settings: '/info/settings',
+      manifest: '/info/manifest'
+    },
+    ticket: {
+      progress: '/managed/progress-ticket/:space/:subpath/:shortname/:action'
     }
   }
 };

@@ -1,24 +1,3 @@
-import { ResourceType } from "../../dmart.model";
-
-export type typeScope = "managed" | "public";
-
-
-export interface IResource {
-  resource_type?: ResourceType;
-  space_name: string;
-  subpath: string;
-  shortname: string;
-}
-
-export interface IOptions  {
-  retrieve_json_payload?: boolean;
-  retrieve_attachments?: boolean;
-  validate_schema?: boolean;
-}
-
-export type IEntryQuery = IResource & IOptions;
-
-
 export const GetParamsAsString = (urlParams: any, joinArray = false): string => {
   const s = new URLSearchParams();
 
@@ -47,4 +26,3 @@ export const GetParamsAsString = (urlParams: any, joinArray = false): string => 
   return s.toString();
 
 };
-
