@@ -302,7 +302,6 @@ export class Dmart {
     }
   }
 
-  // did not migrage
   public static async get_spaces(): Promise<ApiResponse | null> {
     return await this.query({
       type: QueryType.spaces,
@@ -313,7 +312,6 @@ export class Dmart {
     });
   }
 
-  // did not migrage
   public static async get_children(
     space_name: string,
     subpath: string,
@@ -333,7 +331,6 @@ export class Dmart {
     });
   }
 
-  // this does not exist in dmart, there is no /parentshortname in payload url
   public static get_attachment_url(
     resource_type: ResourceType,
     space_name: string,
@@ -361,26 +358,6 @@ export class Dmart {
   }
 
   // TODO: update to enums
-  // FIXME: where is the ext?
-  public static async get_attachment_content(
-    resource_type: string,
-    space_name: string,
-    subpath: string,
-    shortname: string,
-    scope: string = "managed"
-  ) {
-    try {
-      const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}`,
-        { headers }
-      );
-      return data;
-    } catch (error: any) {
-      throw error;
-    }
-  }
-
-  // duplicate
   public static async get_payload(
     resource_type: string,
     space_name: string,
@@ -392,27 +369,7 @@ export class Dmart {
   ) {
     try {
       const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
-        { headers }
-      );
-      return data;
-    } catch (error: any) {
-      throw error;
-    }
-  }
-
-  // duplicate
-  public static async get_payload_content(
-    resource_type: string,
-    space_name: string,
-    subpath: string,
-    shortname: string,
-    ext: string = ".json",
-    scope: string = "managed"
-  ) {
-    try {
-      const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${ext}`,
+        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${schemaShortname}${ext}`,
         { headers }
       );
       return data;
