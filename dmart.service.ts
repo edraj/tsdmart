@@ -342,7 +342,7 @@ export class Dmart {
     ext: string | null = null,
     scope: string = "managed"
   ) {
-    return `/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
+    return `${axios.defaults.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
       /\/+$/,
       ""
     )}/${parent_shortname}/${shortname}${ext === null ? "" : `.${ext}`}`;
