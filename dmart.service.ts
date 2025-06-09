@@ -386,6 +386,7 @@ export class Dmart {
     space_name: string,
     subpath: string,
     shortname: string,
+    schemaShortname: string = "",
     ext: string = ".json",
     scope: string = "managed"
   ) {
