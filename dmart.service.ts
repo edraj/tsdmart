@@ -224,6 +224,8 @@ export class Dmart {
     }
   }
 
+
+
   public static async upload_with_payload(
     space_name: string,
     subpath: string,
@@ -343,7 +345,7 @@ export class Dmart {
     return `/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
       /\/+$/,
       ""
-    )}/${parent_shortname}/${shortname}${ext === null ? "" : ext}`;
+    )}/${parent_shortname}/${shortname}${ext === null ? "" : `.${ext}`}`;
   }
 
   public static async get_space_health(space_name: string) {
@@ -363,14 +365,20 @@ export class Dmart {
     space_name: string,
     subpath: string,
     shortname: string,
-    schemaShortname: string = "",
-    ext: string = ".json",
+    schemaShortname: string|null = null,
+    ext: string = "json",
     scope: string = "managed"
   ) {
     try {
+      let url = `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}`;
+
+      if(schemaShortname){
+        url += `.${schemaShortname}`
+      }
+      url += `.${ext}`
       const { data } = await axios.get<any>(
-        `${scope}/payload/${resource_type}/${space_name}/${subpath}/${shortname}${schemaShortname}${ext}`,
-        { headers }
+          url,
+          { headers }
       );
       return data;
     } catch (error: any) {
