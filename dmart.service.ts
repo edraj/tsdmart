@@ -1,10 +1,9 @@
-import axios from "axios";
+import axios, {AxiosInstance} from "axios";
 import {
     ActionRequest,
     ActionResponse,
     ApiQueryResponse,
     ApiResponse,
-    ClientError,
     ContentType,
     headers,
     LoginResponse,
@@ -17,31 +16,47 @@ import {
     Status,
 } from "./dmart.model";
 
-axios.defaults.withCredentials = true;
-axios.defaults.baseURL = "http://localhost:8282";
-
-axios.interceptors.response.use(null, function (error) {
-  // need error.code (enum), error.status (same), error.message (axios)
-  // error.response.data (dmart), error.response.config. method, url,
-  const err: ClientError = {
-    code: error.code,
-    status: error.status,
-    message: error.message,
-    request: {
-      url: error.response?.config?.url,
-      method: error.response?.config?.method,
-    },
-    response: error.response?.data,
-  };
-  return Promise.reject(err);
-});
-export const dmartClient = axios;
 
 export class Dmart {
-  //   static baseURL = "http://localhost:8282";
+    static axiosDmartInstance: AxiosInstance;
+
+    static setAxiosInstance(axiosInstance: AxiosInstance) {
+        Dmart.axiosDmartInstance = axiosInstance;
+    }
+
+    public static getAxiosInstance(): AxiosInstance {
+        if (!Dmart.axiosDmartInstance) {
+            throw new Error("Axios instance is not set. Please set it using setAxiosInstance method.");
+        }
+        return Dmart.axiosDmartInstance;
+    }
+
+    public static getHeaders() {
+        return headers;
+    }
+
+    public static setHeaders(newHeaders: any) {
+        Object.assign(headers, newHeaders);
+    }
+
+    public static getBaseURL() {
+        return Dmart.axiosDmartInstance.defaults.baseURL;
+    }
+
+    public static set setBaseURL(url: string) {
+        Dmart.axiosDmartInstance.defaults.baseURL = url;
+    }
+
+    public static getToken() {
+        return headers["Authorization"] ? headers["Authorization"].replace("Bearer ", "") : null;
+    }
+
+    public static setToken(token: string) {
+        headers["Authorization"] = `Bearer ${token}`;
+    }
 
   public static async login(shortname: string, password: string) {
-    const response = await axios.post<LoginResponse>(
+    const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
       `user/login`,
       { shortname, password },
       { headers }
@@ -56,7 +71,7 @@ export class Dmart {
 
   public static async loginBy(credentials: any, password: string) {
     try {
-      const response = await axios.post<LoginResponse>(
+      const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
         `user/login`,
         { ...credentials, password },
         { headers }
@@ -74,7 +89,7 @@ export class Dmart {
 
   public static async logout() {
     try {
-      const { data } = await axios.post<ApiResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
         `user/logout`,
         {},
         { headers }
@@ -87,7 +102,7 @@ export class Dmart {
 
   public static async create_user(request: any) {
     try {
-      const { data } = await axios.post<ActionResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ActionResponse>(
         `user/create`,
         request,
         { headers }
@@ -100,7 +115,7 @@ export class Dmart {
 
   public static async update_user(request: any) {
     try {
-      const { data } = await axios.post<ActionResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ActionResponse>(
         `user/profile`,
         request,
         { headers }
@@ -113,7 +128,7 @@ export class Dmart {
 
   public static async check_existing(prop: string, value: string) {
     try {
-      const { data } = await axios.get<ResponseEntry>(
+      const { data } = await Dmart.axiosDmartInstance.get<ResponseEntry>(
         `user/check-existing?${prop}=${value}`,
         { headers }
       );
@@ -125,7 +140,7 @@ export class Dmart {
 
   public static async get_profile() {
     try {
-      const { data } = await axios.get<ProfileResponse>(`user/profile`, {
+      const { data } = await Dmart.axiosDmartInstance.get<ProfileResponse>(`user/profile`, {
         headers,
       });
       if (typeof localStorage !== "undefined" && data.status === "success") {
@@ -154,7 +169,7 @@ export class Dmart {
         query.sort_by = query.sort_by || "created_at";
       }
       query.subpath = query.subpath.replace(/\/+/g, "/");
-      const { data } = await axios.post<ApiQueryResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ApiQueryResponse>(
         `${scope}/query`,
         query,
         { headers, timeout: 3000 }
@@ -170,7 +185,7 @@ export class Dmart {
       query.sort_type = query.sort_type || SortyType.ascending;
       query.sort_by = "created_at";
       query.subpath = query.subpath.replace(/\/+/g, "/");
-      const { data } = await axios.post<ApiQueryResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ApiQueryResponse>(
         `managed/csv`,
         query,
         { headers }
@@ -183,7 +198,7 @@ export class Dmart {
 
   public static async space(action: ActionRequest): Promise<ActionResponse> {
     try {
-      const { data } = await axios.post<ActionResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ActionResponse>(
         `managed/space`,
         action,
         { headers }
@@ -195,7 +210,7 @@ export class Dmart {
   }
 
   public static async request(action: ActionRequest): Promise<ActionResponse> {
-    const res = await axios.post<ActionResponse>(`managed/request`, action, {
+    const res = await Dmart.axiosDmartInstance.post<ActionResponse>(`managed/request`, action, {
       headers,
     });
     return res?.data;
@@ -214,7 +229,7 @@ export class Dmart {
     try {
       if (!subpath || subpath == "/") subpath = "__root__";
       const url = `${scope}/entry/${resource_type}/${space_name}/${subpath}/${shortname}?retrieve_json_payload=${retrieve_json_payload}&retrieve_attachments=${retrieve_attachments}&validate_schema=${validate_schema}`;
-      const { data } = await axios.get<ResponseEntry>(
+      const { data } = await Dmart.axiosDmartInstance.get<ResponseEntry>(
         `${url.replace(/\/+/g, "/")}`,
         { headers }
       );
@@ -262,7 +277,7 @@ export class Dmart {
     const headers = { "Content-Type": "multipart/form-data" };
 
     try {
-      const { data } = await axios.post<ApiResponse>(
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
         `${scope}/resource_with_payload`,
         form_data,
         { headers }
@@ -285,7 +300,7 @@ export class Dmart {
   ) {
     try {
       const url = `managed/data-asset`;
-      const { data } = await axios.post(
+      const { data } = await Dmart.axiosDmartInstance.post(
         url,
         {
           space_name: spaceName,
@@ -350,7 +365,7 @@ export class Dmart {
 
   public static async get_space_health(space_name: string) {
     try {
-      const { data } = await axios.get<
+      const { data } = await Dmart.axiosDmartInstance.get<
         ApiQueryResponse & { attributes: { folders_report: Object } }
       >(`managed/health/${space_name}`, { headers });
       return data;
@@ -376,7 +391,7 @@ export class Dmart {
         url += `.${schemaShortname}`
       }
       url += `.${ext}`
-      const { data } = await axios.get<any>(
+      const { data } = await Dmart.axiosDmartInstance.get<any>(
           url,
           { headers }
       );
@@ -402,7 +417,7 @@ export class Dmart {
       if (comment) {
         payload.comment = comment;
       }
-      const { data } = await axios.put<
+      const { data } = await Dmart.axiosDmartInstance.put<
         ApiQueryResponse & { attributes: { folders_report: Object } }
       >(
         `managed/progress-ticket/${space_name}/${subpath}/${shortname}/${action}`,
@@ -432,7 +447,7 @@ export class Dmart {
             url += `/${workflowShortname}`;
         }
         url += `/${schemaShortname}/${subpath}`;
-      const { data } = await axios.post(
+      const { data } = await Dmart.axiosDmartInstance.post(
           url,
         record,
         { headers }
@@ -445,7 +460,7 @@ export class Dmart {
 
   public static async get_manifest() {
     try {
-      const { data } = await axios.get<any>(`info/manifest`, {
+      const { data } = await Dmart.axiosDmartInstance.get<any>(`info/manifest`, {
         headers,
       });
       return data;
@@ -456,7 +471,7 @@ export class Dmart {
 
   public static async get_settings() {
     try {
-      const { data } = await axios.get<any>(`info/settings`, {
+      const { data } = await Dmart.axiosDmartInstance.get<any>(`info/settings`, {
         headers,
       });
       return data;

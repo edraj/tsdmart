@@ -2,8 +2,20 @@
 
 A TypeScript implementation of the Dmart that depends on axios.
 
-## APIs
+# Setup
 
+make sure you define `axiosDmartInstance` with your axios instance before importing the Dmart class.
+
+
+## APIs
+* `setAxiosInstance(axiosInstance: AxiosInstance)` - Sets the axios instance to be used by the Dmart class.
+* `getAxiosInstance() -> AxiosInstance` - Gets the axios instance used by the Dmart class.
+* `getBaseUrl() -> string` - Gets the base URL of the Dmart instance.
+* `setBaseUrl(baseUrl: string)` - Sets the base URL of the Dmart instance.
+* `getHeaders()` - Gets the headers used by the Dmart instance.
+* `setHeaders(headers: Record<string, string>)` - Sets the headers used by the Dmart instance.
+* `getToken() -> string | null` - Gets the token used by the Dmart instance.
+* `setToken(token: string)` - Sets the token used by the Dmart instance.
 * `login(shortname: string, password: string) -> Promise<LoginResponse>` - Performs a login action (shortname).
 * `loginBy(credentials: dict, password: string) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
