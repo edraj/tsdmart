@@ -172,7 +172,7 @@ export class Dmart {
       const { data } = await Dmart.axiosDmartInstance.post<ApiQueryResponse>(
         `${scope}/query`,
         query,
-        { headers, timeout: 3000 }
+        { headers }
       );
       return data;
     } catch (error: any) {
