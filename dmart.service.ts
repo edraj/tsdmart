@@ -1,4 +1,4 @@
-import axios, {AxiosInstance} from "axios";
+import {AxiosInstance} from "axios";
 import {
     ActionRequest,
     ActionResponse,
@@ -299,9 +299,8 @@ export class Dmart {
     filter_data_assets?: string[]
   ) {
     try {
-      const url = `managed/data-asset`;
       const { data } = await Dmart.axiosDmartInstance.post(
-        url,
+        'managed/data-asset',
         {
           space_name: spaceName,
           resource_type: resourceType,
@@ -357,7 +356,7 @@ export class Dmart {
     ext: string | null = null,
     scope: string = "managed"
   ) {
-    return `${axios.defaults.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
+    return `${Dmart.axiosDmartInstance.defaults.baseURL}/${scope}/payload/${resource_type}/${space_name}/${subpath.replace(
       /\/+$/,
       ""
     )}/${parent_shortname}/${shortname}${ext === null ? "" : `.${ext}`}`;
