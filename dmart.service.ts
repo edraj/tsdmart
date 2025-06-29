@@ -196,6 +196,38 @@ export class Dmart {
     }
   }
 
+  public static async resources_from_csv(
+      space_name: string,
+      subpath: string,
+      resourceType: ResourceType,
+      schema: string,
+      payload: File,
+  ){
+    try {
+      let csvUrl = `/managed/resources_from_csv/${resourceType}/${space_name}/${subpath}`;
+
+      if(schema){
+        csvUrl += `/${schema}`;
+      }
+
+      let formdata = new FormData();
+      formdata.append("resources_file", payload);
+
+      const headers = {"Content-Type": "multipart/form-data"};
+
+      const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+          csvUrl,
+          formdata,
+          {headers}
+      );
+
+      return data;
+    }  catch (error) {
+      return error;
+    }
+  }
+
+
   public static async space(action: ActionRequest): Promise<ActionResponse> {
     try {
       const { data } = await Dmart.axiosDmartInstance.post<ActionResponse>(
