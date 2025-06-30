@@ -1,19 +1,19 @@
 import {AxiosInstance} from "axios";
 import {
-    ActionRequest,
-    ActionResponse,
-    ApiQueryResponse,
-    ApiResponse,
-    ContentType,
-    headers,
-    LoginResponse,
-    ProfileResponse,
-    QueryRequest,
-    QueryType,
-    ResourceType,
-    ResponseEntry,
-    SortyType,
-    Status,
+  ActionRequest, ActionRequestRecord,
+  ActionResponse,
+  ApiQueryResponse,
+  ApiResponse,
+  ContentType,
+  headers,
+  LoginResponse,
+  ProfileResponse,
+  QueryRequest,
+  QueryType,
+  ResourceType,
+  ResponseEntry,
+  SortyType,
+  Status,
 } from "./dmart.model";
 
 
@@ -100,7 +100,7 @@ export class Dmart {
     }
   }
 
-  public static async create_user(request: any) {
+  public static async create_user(request: ActionRequestRecord) {
     try {
       const { data } = await Dmart.axiosDmartInstance.post<ActionResponse>(
         `user/create`,
@@ -113,7 +113,7 @@ export class Dmart {
     }
   }
 
-  public static async update_user(request: any) {
+  public static async update_user(request: ActionRequestRecord) {
     try {
       const { data } = await Dmart.axiosDmartInstance.post<ActionResponse>(
         `user/profile`,
