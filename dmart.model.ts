@@ -47,6 +47,21 @@ export enum UserType {
   bot = "bot",
 }
 
+export interface SendOTPRequest {
+  msisdn?: string;
+  email?: string;
+}
+
+export interface PasswordResetRequest {
+  msisdn?: string;
+  shortname?: string;
+  email?: string;
+}
+
+export interface ConfirmOTPRequest {
+  code: string
+}
+
 export type LoginResponseRecord = ApiResponseRecord & {
   attributes: {
     access_token: string;

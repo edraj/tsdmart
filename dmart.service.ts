@@ -4,14 +4,17 @@ import {
   ActionResponse,
   ApiQueryResponse,
   ApiResponse,
+  ConfirmOTPRequest,
   ContentType,
   headers,
   LoginResponse,
+  PasswordResetRequest,
   ProfileResponse,
   QueryRequest,
   QueryType,
   ResourceType,
   ResponseEntry,
+  SendOTPRequest,
   SortyType,
   Status,
 } from "./dmart.model";
@@ -505,6 +508,100 @@ export class Dmart {
       const { data } = await Dmart.axiosDmartInstance.get<any>(`info/settings`, {
         headers,
       });
+      return data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  public static async otp_request(
+    request: SendOTPRequest,
+    acceptLanguage: string | null = null
+  ) {
+    try {
+      const requestHeaders = { ...headers };
+      if (acceptLanguage) {
+        requestHeaders['Accept-Language'] = acceptLanguage;
+      }
+
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        `user/otp-request`,
+        request,
+        { headers: requestHeaders }
+      );
+      return data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  public static async otp_request_login(
+    request: SendOTPRequest,
+    acceptLanguage: string | null = null
+  ) {
+    try {
+      const requestHeaders = { ...headers };
+      if (acceptLanguage) {
+        requestHeaders['Accept-Language'] = acceptLanguage;
+      }
+
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        `user/otp-request-login`,
+        request,
+        { headers: requestHeaders }
+      );
+      return data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  public static async password_reset_request(request: PasswordResetRequest) {
+    try {
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        `user/password-reset-request`,
+        request,
+        { headers }
+      );
+      return data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  public static async confirm_otp(request: ConfirmOTPRequest) {
+    try {
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        `user/otp-confirm`,
+        request,
+        { headers }
+      );
+      return data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  public static async user_reset(shortname: string) {
+    try {
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        `user/reset`,
+        { shortname },
+        { headers }
+      );
+      return data;
+    } catch (error: any) {
+      throw error;
+    }
+  }
+
+  public static async validate_password(password: string) {
+    try {
+      const { data } = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        `user/validate_password`,
+        { password },
+        { headers }
+      );
       return data;
     } catch (error: any) {
       throw error;

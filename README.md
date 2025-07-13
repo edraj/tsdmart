@@ -19,6 +19,12 @@ make sure you define `axiosDmartInstance` with your axios instance before import
 * `login(shortname: string, password: string) -> Promise<LoginResponse>` - Performs a login action (shortname).
 * `loginBy(credentials: dict, password: string) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
+* `otp_request(request: SendOTPRequest,acceptLanguage: string | null = null)  -> Promise<ApiResponse | null>` - Requests an OTP (One Time Password) for login.
+* `otp_request_login(request: SendOTPRequest,acceptLanguage: string | null = null) -> Promise<ApiResponse | null>` - Requests an OTP for login and returns a login response.
+* `password_reset_request(request: PasswordResetRequest) -> Promise<ApiResponse | null>` - Requests a password reset.
+* `confirm_otp(request: ConfirmOTPRequest) -> Promise<ApiResponse | null>` - Confirms the OTP (One Time Password) for login or password reset.
+* `user_reset(shortname: string) -> Promise<ApiResponse | null>` - Resets the user password by sending an OTP to the user's email.
+* `validate_password(password: string) -> Promise<ApiResponse | null>` - Validates the password.
 * `create_user(request: any) -> Promise<ActionResponse>` - Creates a new user.
 * `update_user(request: any) -> Promise<ActionResponse>` - Updates an existing user.
 * `check_existing(prop: string, value: string) -> Promise<ResponseEntry | null>` - Checks if a user exists.
