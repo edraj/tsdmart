@@ -5,7 +5,6 @@ import {
   ApiQueryResponse,
   ApiResponse,
   ConfirmOTPRequest,
-  ContentType,
   headers,
   LoginResponse,
   PasswordResetRequest,
@@ -275,29 +274,28 @@ export class Dmart {
   }
 
 
-
   public static async upload_with_payload(
-    space_name: string,
-    subpath: string,
-    shortname: string,
-    resource_type: ResourceType,
-    payload_file: File,
-    content_type?: ContentType,
-    schema_shortname?: string,
-    scope: string = "managed"
-  ): Promise<ApiResponse> {
+      space_name: string,
+      subpath: string,
+      shortname: string,
+      resource_type: ResourceType,
+      payload_file: File,
+      attributes?: Record<string, any>|null,
+      scope: string = "managed"
+  ) {
     const request_record_body: any = {
       resource_type,
       subpath,
       shortname,
-      attributes: { is_active: true, payload: { body: {} } },
+      attributes: attributes,
     };
-    if (content_type) {
-      request_record_body.attributes.payload.content_type = content_type;
-    }
-    if (schema_shortname) {
-      request_record_body.attributes.payload.schema_shortname =
-        schema_shortname;
+
+    if (attributes !== null && Object.keys(attributes!).length === 0) {
+        request_record_body.attributes = {is_active: true, payload: { body: {} }};
+    } else {
+      if(!Object.keys(attributes!).includes('is_active')){
+        request_record_body.attributes.is_active = true;
+      }
     }
 
     const request_record = new Blob([JSON.stringify(request_record_body)], {
