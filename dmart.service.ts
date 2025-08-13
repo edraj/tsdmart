@@ -109,7 +109,7 @@ export class Dmart {
         }
     }
 
-    public static async create_user(request: ActionRequestRecord) {
+    public static async createUser(request: ActionRequestRecord) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
                 `user/create`,
@@ -122,7 +122,7 @@ export class Dmart {
         }
     }
 
-    public static async update_user(request: ActionRequestRecord) {
+    public static async updateUser(request: ActionRequestRecord) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
                 `user/profile`,
@@ -135,7 +135,7 @@ export class Dmart {
         }
     }
 
-    public static async check_existing(prop: string, value: string) {
+    public static async checkExisting(prop: string, value: string) {
         try {
             const {data} = await Dmart.axiosDmartInstance.get<ResponseEntry>(
                 `user/check-existing?${prop}=${value}`,
@@ -147,7 +147,7 @@ export class Dmart {
         }
     }
 
-    public static async get_profile() {
+    public static async getProfile() {
         try {
             const {data} = await Dmart.axiosDmartInstance.get<ProfileResponse>(`user/profile`, {
                 headers,
@@ -205,7 +205,7 @@ export class Dmart {
         }
     }
 
-    public static async resources_from_csv(
+    public static async resourcesFromCsv(
         request: ResourcesFromCSVRequest
     ) {
         try {
@@ -253,7 +253,7 @@ export class Dmart {
         return res?.data;
     }
 
-    public static async retrieve_entry(
+    public static async retrieveEntry(
         request: RetrieveEntryRequest,
         scope: string = "managed"
     ): Promise<ResponseEntry | null> {
@@ -274,7 +274,7 @@ export class Dmart {
     }
 
 
-    public static async upload_with_payload(
+    public static async uploadWithPayload(
         request: UploadWithPayloadRequest,
         scope: string = "managed"
     ) {
@@ -340,7 +340,7 @@ export class Dmart {
         }
     }
 
-    public static async get_spaces(): Promise<ApiResponse | null> {
+    public static async getSpaces(): Promise<ApiResponse | null> {
         return await this.query({
             type: QueryType.spaces,
             space_name: "management",
@@ -350,7 +350,7 @@ export class Dmart {
         });
     }
 
-    public static async get_children(
+    public static async getChildren(
         request: GetChildrenRequest
     ): Promise<ApiResponse | null> {
         if(request.limit === null){
@@ -374,7 +374,7 @@ export class Dmart {
         });
     }
 
-    public static get_attachment_url(
+    public static getAttachmentUrl(
         request: GetAttachmentURLRequest,
         scope: string = "managed"
     ) {
@@ -384,7 +384,7 @@ export class Dmart {
         )}/${request.parent_shortname}/${request.shortname}${request.ext === null ? "" : `.${request.ext}`}`;
     }
 
-    public static async get_space_health(space_name: string) {
+    public static async getSpaceHealth(space_name: string) {
         try {
             const {data} = await Dmart.axiosDmartInstance.get<
                 ApiQueryResponse & { attributes: { folders_report: Object } }
@@ -395,7 +395,7 @@ export class Dmart {
         }
     }
 
-    public static async get_payload(
+    public static async getPayload(
         request: GetPayloadRequest,
         scope: string = "managed"
     ) {
@@ -416,7 +416,7 @@ export class Dmart {
         }
     }
 
-    public static async progress_ticket(
+    public static async progressTicket(
         request: ProgressTicketRequest
     ) {
         try {
@@ -485,7 +485,7 @@ export class Dmart {
         }
     }
 
-    public static async otp_request(
+    public static async otpRequest(
         request: SendOTPRequest,
         acceptLanguage: string | null = null
     ) {
@@ -506,7 +506,7 @@ export class Dmart {
         }
     }
 
-    public static async otp_request_login(
+    public static async otpRequestLogin(
         request: SendOTPRequest,
         acceptLanguage: string | null = null
     ) {
@@ -527,7 +527,7 @@ export class Dmart {
         }
     }
 
-    public static async password_reset_request(request: PasswordResetRequest) {
+    public static async passwordResetRequest(request: PasswordResetRequest) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
                 `user/password-reset-request`,
@@ -540,7 +540,7 @@ export class Dmart {
         }
     }
 
-    public static async confirm_otp(request: ConfirmOTPRequest) {
+    public static async confirmOtp(request: ConfirmOTPRequest) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
                 `user/otp-confirm`,
@@ -553,7 +553,7 @@ export class Dmart {
         }
     }
 
-    public static async user_reset(shortname: string) {
+    public static async userReset(shortname: string) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
                 `user/reset`,
@@ -566,7 +566,7 @@ export class Dmart {
         }
     }
 
-    public static async validate_password(password: string) {
+    public static async validatePassword(password: string) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
                 `user/validate_password`,
