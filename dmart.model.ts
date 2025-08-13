@@ -52,6 +52,11 @@ export interface SendOTPRequest {
   email?: string;
 }
 
+export enum DmartScope {
+    managed = "managed",
+    public = "public",
+}
+
 export interface PasswordResetRequest {
   msisdn?: string;
   shortname?: string;
@@ -344,3 +349,88 @@ export type ActionRequest = {
 export type ApiQueryResponse = ApiResponse & {
   attributes: { total: number; returned: number };
 };
+
+export interface ResourcesFromCSVRequest {
+    space_name: string,
+    subpath: string,
+    resourceType: ResourceType,
+    schema: string,
+    payload: File,
+}
+
+export interface RetrieveEntryRequest {
+    resource_type: ResourceType,
+    space_name: string,
+    subpath: string,
+    shortname: string,
+    retrieve_json_payload: boolean,
+    retrieve_attachments: boolean,
+    validate_schema: boolean|null,
+}
+
+export interface UploadWithPayloadRequest {
+    space_name: string,
+    subpath: string,
+    shortname: string,
+    resource_type: ResourceType,
+    payload_file: File,
+    attributes?: Record<string, any> | null,
+}
+
+export interface FetchDataAssetRequest {
+    resourceType: string,
+    dataAssetType: string,
+    spaceName: string,
+    subpath: string,
+    shortname: string,
+    query_string?: string,
+    filter_data_assets?: string[]
+}
+
+export interface GetChildrenRequest {
+    space_name: string,
+    subpath: string,
+    search: string,
+    limit: number|null,
+    offset: number|null,
+    restrict_types: Array<ResourceType>|null
+}
+
+export interface GetAttachmentURLRequest {
+    resource_type: ResourceType,
+    space_name: string,
+    subpath: string,
+    parent_shortname: string,
+    shortname: string,
+    ext: string | null,
+}
+
+export interface GetPayloadRequest {
+    resource_type: ResourceType,
+    space_name: string,
+    subpath: string,
+    shortname: string,
+    schemaShortname: string | null,
+    ext: string,
+}
+
+export interface ProgressTicketRequest {
+    space_name: string,
+    subpath: string,
+    shortname: string,
+    action: string,
+    resolution?: string,
+    comment?: string
+}
+
+export interface SubmitRequest {
+    spaceName: string,
+    schemaShortname: string,
+    subpath: string,
+    record: any,
+    resourceType?: string,
+    workflowShortname?: string,
+}
+
+
+
