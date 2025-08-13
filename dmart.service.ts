@@ -463,7 +463,7 @@ export class Dmart {
         }
     }
 
-    public static async get_manifest() {
+    public static async getManifest() {
         try {
             const {data} = await Dmart.axiosDmartInstance.get<any>(`info/manifest`, {
                 headers,
@@ -474,7 +474,7 @@ export class Dmart {
         }
     }
 
-    public static async get_settings() {
+    public static async getSettings() {
         try {
             const {data} = await Dmart.axiosDmartInstance.get<any>(`info/settings`, {
                 headers,
