@@ -5,7 +5,7 @@ import {
     ActionResponse,
     ApiQueryResponse,
     ApiResponse,
-    ConfirmOTPRequest,
+    ConfirmOTPRequest, DmartScope,
     FetchDataAssetRequest,
     GetAttachmentURLRequest,
     GetChildrenRequest,
@@ -170,7 +170,7 @@ export class Dmart {
 
     public static async query(
         query: QueryRequest,
-        scope: string = "managed"
+        scope: string = DmartScope.managed
     ): Promise<ApiQueryResponse | null> {
         try {
             if (query.type != QueryType.spaces) {
@@ -255,7 +255,7 @@ export class Dmart {
 
     public static async retrieveEntry(
         request: RetrieveEntryRequest,
-        scope: string = "managed"
+        scope: string = DmartScope.managed
     ): Promise<ResponseEntry | null> {
         try {
             if (request.validate_schema === null) {
@@ -276,7 +276,7 @@ export class Dmart {
 
     public static async uploadWithPayload(
         request: UploadWithPayloadRequest,
-        scope: string = "managed"
+        scope: string = DmartScope.managed
     ) {
         const request_record_body: any = {
             resource_type: request.resource_type,
@@ -376,7 +376,7 @@ export class Dmart {
 
     public static getAttachmentUrl(
         request: GetAttachmentURLRequest,
-        scope: string = "managed"
+        scope: string = DmartScope.managed
     ) {
         return `${Dmart.axiosDmartInstance.defaults.baseURL}/${scope}/payload/${request.resource_type}/${request.space_name}/${request.subpath.replace(
             /\/+$/,
@@ -397,7 +397,7 @@ export class Dmart {
 
     public static async getPayload(
         request: GetPayloadRequest,
-        scope: string = "managed"
+        scope: string = DmartScope.managed
     ) {
         try {
             let url = `${scope}/payload/${request.resource_type}/${request.space_name}/${request.subpath}/${request.shortname}`;
