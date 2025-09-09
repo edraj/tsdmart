@@ -1,6 +1,6 @@
 {
   "name": "@edraj/tsdmart",
-  "version": "4.0.3",
+  "version": "4.1.0",
   "description": "A TypeScript implementation of the Dmart that depends on axios.",
   "author": "Kefah T. Issa",
   "email": "kefah.issa@gmail.com",

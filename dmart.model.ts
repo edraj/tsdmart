@@ -353,6 +353,7 @@ export type ApiQueryResponse = ApiResponse & {
 export interface ResourcesFromCSVRequest {
     space_name: string,
     subpath: string,
+    isUpdate?: boolean,
     resourceType: ResourceType,
     schema: string,
     payload: File,

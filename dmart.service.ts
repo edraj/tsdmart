@@ -303,7 +303,7 @@ export class Dmart {
     ) {
         try {
             let csvUrl = `/managed/resources_from_csv/${request.resourceType}/${request.space_name}/${request.subpath}`;
-
+            const params: any = {};
             if (request.schema) {
                 csvUrl += `/${request.schema}`;
             }
@@ -311,12 +311,16 @@ export class Dmart {
             let formdata = new FormData();
             formdata.append("resources_file", request.payload);
 
+            if(request.isUpdate){
+                params['is_update'] = request.isUpdate;
+            }
+
             const headers = {"Content-Type": "multipart/form-data"};
 
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
                 csvUrl,
                 formdata,
-                {headers}
+                {headers, params}
             );
 
             return data;
