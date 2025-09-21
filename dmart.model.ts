@@ -248,6 +248,7 @@ export enum ContentType {
   audio = "audio",
   video = "video",
   jsonl = "jsonl",
+  apk = "apk",
   csv = "csv",
   sqlite = "sqlite",
   parquet = "parquet",
