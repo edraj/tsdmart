@@ -105,14 +105,13 @@ export class Dmart {
      */
     public static async login(shortname: string, password: string) {
         const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
-            `user/login`,
+            'user/login',
             {shortname, password},
             {headers}
         );
         const data: LoginResponse = response.data;
         if (data.status == Status.success && data.records.length > 0) {
-            headers["Authorization"] =
-                "Bearer " + data.records[0]?.attributes.access_token;
+            headers["Authorization"] = "Bearer " + data.records[0]?.attributes.access_token;
         }
         return data;
     }
@@ -127,7 +126,7 @@ export class Dmart {
     public static async loginBy(credentials: any, password: string) {
         try {
             const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
-                `user/login`,
+                'user/login',
                 {...credentials, password},
                 {headers}
             );
@@ -150,7 +149,7 @@ export class Dmart {
     public static async logout() {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/logout`,
+                'user/logout',
                 {},
                 {headers}
             );
@@ -169,7 +168,7 @@ export class Dmart {
     public static async createUser(request: ActionRequestRecord) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
-                `user/create`,
+                'user/create',
                 request,
                 {headers}
             );
@@ -188,7 +187,7 @@ export class Dmart {
     public static async updateUser(request: ActionRequestRecord) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
-                `user/profile`,
+                'user/profile',
                 request,
                 {headers}
             );
@@ -224,7 +223,7 @@ export class Dmart {
      */
     public static async getProfile() {
         try {
-            const {data} = await Dmart.axiosDmartInstance.get<ProfileResponse>(`user/profile`, {
+            const {data} = await Dmart.axiosDmartInstance.get<ProfileResponse>('user/profile', {
                 headers,
             });
             if (typeof localStorage !== "undefined" && data.status === "success") {
@@ -283,7 +282,7 @@ export class Dmart {
             query.sort_by = "created_at";
             query.subpath = query.subpath.replace(/\/+/g, "/");
             const {data} = await Dmart.axiosDmartInstance.post<ApiQueryResponse>(
-                `managed/csv`,
+                'managed/csv',
                 query,
                 {headers}
             );
@@ -329,24 +328,24 @@ export class Dmart {
         }
     }
 
-    /**
-     * Performs space-level operations (create, update, delete spaces)
-     * @param action - ActionRequest containing the operation details for space management
-     * @returns Promise resolving to ActionResponse with operation result
-     * @throws Error if space operation fails
-     */
-    public static async space(action: ActionRequest): Promise<ActionResponse> {
-        try {
-            const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
-                `managed/space`,
-                action,
-                {headers}
-            );
-            return data;
-        } catch (error: any) {
-            throw error;
-        }
-    }
+    // /** LEGACY, DEPRECATED CODE, DO NOT USE
+    //  * Performs space-level operations (create, update, delete spaces)
+    //  * @param action - ActionRequest containing the operation details for space management
+    //  * @returns Promise resolving to ActionResponse with operation result
+    //  * @throws Error if space operation fails
+    //  */
+    // public static async space(action: ActionRequest): Promise<ActionResponse> {
+    //     try {
+    //         const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
+    //             'managed/space',
+    //             action,
+    //             {headers}
+    //         );
+    //         return data;
+    //     } catch (error: any) {
+    //         throw error;
+    //     }
+    // }
 
     /**
      * Executes a general request action against the Dmart API
@@ -354,7 +353,7 @@ export class Dmart {
      * @returns Promise resolving to ActionResponse with request result
      */
     public static async request(action: ActionRequest): Promise<ActionResponse> {
-        const res = await Dmart.axiosDmartInstance.post<ActionResponse>(`managed/request`, action, {
+        const res = await Dmart.axiosDmartInstance.post<ActionResponse>('managed/request', action, {
             headers,
         });
         return res?.data;
@@ -637,7 +636,7 @@ export class Dmart {
      */
     public static async getManifest() {
         try {
-            const {data} = await Dmart.axiosDmartInstance.get<any>(`info/manifest`, {
+            const {data} = await Dmart.axiosDmartInstance.get<any>('info/manifest', {
                 headers,
             });
             return data;
@@ -653,7 +652,7 @@ export class Dmart {
      */
     public static async getSettings() {
         try {
-            const {data} = await Dmart.axiosDmartInstance.get<any>(`info/settings`, {
+            const {data} = await Dmart.axiosDmartInstance.get<any>('info/settings', {
                 headers,
             });
             return data;
@@ -680,7 +679,7 @@ export class Dmart {
             }
 
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/otp-request`,
+                'user/otp-request',
                 request,
                 {headers: requestHeaders}
             );
@@ -708,7 +707,7 @@ export class Dmart {
             }
 
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/otp-request-login`,
+                'user/otp-request-login',
                 request,
                 {headers: requestHeaders}
             );
@@ -727,7 +726,7 @@ export class Dmart {
     public static async passwordResetRequest(request: PasswordResetRequest) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/password-reset-request`,
+                'user/password-reset-request',
                 request,
                 {headers}
             );
@@ -746,7 +745,7 @@ export class Dmart {
     public static async confirmOtp(request: ConfirmOTPRequest) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/otp-confirm`,
+                'user/otp-confirm',
                 request,
                 {headers}
             );
@@ -765,7 +764,7 @@ export class Dmart {
     public static async userReset(shortname: string) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/reset`,
+                'user/reset',
                 {shortname},
                 {headers}
             );
@@ -784,7 +783,7 @@ export class Dmart {
     public static async validatePassword(password: string) {
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-                `user/validate_password`,
+                'user/validate_password',
                 {password},
                 {headers}
             );
