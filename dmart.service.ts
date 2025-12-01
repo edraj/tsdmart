@@ -519,10 +519,11 @@ export class Dmart {
         request: GetAttachmentURLRequest,
         scope: string = DmartScope.managed
     ) {
-        return `${Dmart.axiosDmartInstance.defaults.baseURL}/${scope}/payload/${request.resource_type}/${request.space_name}/${request.subpath.replace(
+        const subpath = request.subpath.replace(
             /\/+$/,
             ""
-        )}/${request.parent_shortname}/${request.shortname}${request.ext === null ? "" : `.${request.ext}`}`;
+        );
+        return `${Dmart.axiosDmartInstance.defaults.baseURL}/${scope}/payload/${request.resource_type}/${request.space_name}/${subpath}/${request.parent_shortname}/${request.shortname}${request.ext === null ? "" : `.${request.ext}`}`.replaceAll('//', '/');
     }
 
     /**
