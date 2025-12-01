@@ -178,6 +178,7 @@ export type QueryRequest = {
   sort_type?: SortyType;
   retrieve_json_payload?: boolean;
   retrieve_attachments?: boolean;
+  retrieve_total?: boolean;
   validate_schema?: boolean;
   jq_filter?: string;
   exact_subpath?: boolean;
