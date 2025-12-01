@@ -523,7 +523,7 @@ export class Dmart {
             /\/+$/,
             ""
         );
-        return `${Dmart.axiosDmartInstance.defaults.baseURL}/${scope}/payload/${request.resource_type}/${request.space_name}/${subpath}/${request.parent_shortname}/${request.shortname}${request.ext === null ? "" : `.${request.ext}`}`.replaceAll('//', '/');
+        return `${Dmart.axiosDmartInstance.defaults.baseURL}`+`/${scope}/payload/${request.resource_type}/${request.space_name}/${subpath}/${request.parent_shortname}/${request.shortname}${request.ext === null ? "" : `.${request.ext}`}`.replaceAll('//', '/');
     }
 
     /**
