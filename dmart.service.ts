@@ -422,13 +422,13 @@ export class Dmart {
         form_data.append("request_record", request_record);
         form_data.append("payload_file", request.payload_file);
 
-        const headers = {"Content-Type": "multipart/form-data"};
+        const _headers = {...headers, "Content-Type": "multipart/form-data"};
 
         try {
             const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
                 `${scope}/resource_with_payload`,
                 form_data,
-                {headers}
+                {headers: _headers}
             );
 
             return data;
