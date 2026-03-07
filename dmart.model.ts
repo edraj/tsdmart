@@ -190,7 +190,7 @@ export type QueryRequest = {
 export enum RequestType {
   create = "create",
   update = "update",
-  replace = "replace",
+  progress_ticket = "progress_ticket",
   delete = "delete",
   move = "move",
   updateACL = "update_acl",
