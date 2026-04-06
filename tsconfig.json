@@ -40,9 +40,5 @@
     },
     "ts-node": {
         "esm": true
-    },
-    "parser": "@typescript-eslint/parser",
-    "plugins": [
-        "@typescript-eslint"
-    ]
+    }
 }

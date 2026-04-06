@@ -83,12 +83,12 @@ export type Permission = {
   allowed_actions: Array<ActionType>;
   conditions: Array<string>;
   restricted_fields: Array<any>;
-  allowed_fields_values: Map<string, any>;
+  allowed_fields_values: Record<string, any>;
 };
 
 export enum Language {
   arabic = "arabic",
-  english = "engligh",
+  english = "english",
   kurdish = "kurdish",
   french = "french",
   turkish = "turkish",
@@ -153,10 +153,15 @@ export enum QueryType {
   attachments_aggregation = "attachments_aggregation",
 }
 
-export enum SortyType {
+export enum SortType {
   ascending = "ascending",
   descending = "descending",
 }
+
+/** @deprecated Use `SortType` instead. Will be removed in a future version. */
+export const SortyType = SortType;
+/** @deprecated Use `SortType` instead. Will be removed in a future version. */
+export type SortyType = SortType;
 
 // enum NotificationPriority {
 //   high = "high",
@@ -175,7 +180,7 @@ export type QueryRequest = {
   from_date?: string;
   to_date?: string;
   sort_by?: string;
-  sort_type?: SortyType;
+  sort_type?: SortType;
   retrieve_json_payload?: boolean;
   retrieve_attachments?: boolean;
   retrieve_total?: boolean;
@@ -294,15 +299,13 @@ export type ResponseEntry = MetaExtended & {
   is_active: boolean;
   displayname: Translation;
   description: Translation;
-  tags: Set<string>;
+  tags: Array<string>;
   created_at: string;
   updated_at: string;
   owner_shortname: string;
   payload?: Payload;
   relationships?: any;
-  attachments?: Object;
-  workflow_shortname?: string;
-  state?: string;
+  attachments?: Record<string, unknown>;
 };
 
 export type ResponseRecord = {
@@ -314,7 +317,7 @@ export type ResponseRecord = {
     is_active: boolean;
     displayname: Translation;
     description: Translation;
-    tags: Set<string>;
+    tags: Array<string>;
     created_at: string;
     updated_at: string;
     owner_shortname: string;
