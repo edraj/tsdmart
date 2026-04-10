@@ -1,29 +1,31 @@
-import {AxiosInstance} from "axios";
+import type {AxiosInstance} from "axios";
 import {
+    DmartScope,
+    headers,
+    QueryType,
+    SortType,
+    Status,
+} from "./dmart.model";
+import type {
     ActionRequest,
     ActionRequestRecord,
     ActionResponse,
     ApiQueryResponse,
     ApiResponse,
     ConfirmOTPRequest,
-    DmartScope,
     FetchDataAssetRequest,
     GetAttachmentURLRequest,
     GetChildrenRequest,
     GetPayloadRequest,
-    headers,
     LoginResponse,
     PasswordResetRequest,
     ProfileResponse,
     ProgressTicketRequest,
     QueryRequest,
-    QueryType,
     ResourcesFromCSVRequest,
     ResponseEntry,
     RetrieveEntryRequest,
     SendOTPRequest,
-    SortType,
-    Status,
     SubmitRequest,
     UploadWithPayloadRequest,
 } from "./dmart.model";
