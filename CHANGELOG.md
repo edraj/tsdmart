@@ -1,3 +1,7 @@
+## 1.0.12
+
+- Use type-only imports in `dmart.service.ts` for compatibility with `verbatimModuleSyntax`.
+
 ## 1.0.10
 
 - Implementing DMART apis up to 1.3.x
