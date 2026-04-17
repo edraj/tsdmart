@@ -1,15 +1,43 @@
 {
   "name": "@edraj/tsdmart",
-  "version": "1.0.12",
+  "version": "5.3.1",
   "description": "A TypeScript implementation of the Dmart that depends on axios.",
   "author": "Kefah T. Issa",
   "email": "kefah.issa@gmail.com",
   "license": "AGPL-3.0-or-later",
-  "main": "index.ts",
-  "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
-  },
   "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.js"
+    },
+    "./dmart.model": {
+      "types": "./dist/dmart.model.d.ts",
+      "import": "./dist/dmart.model.js",
+      "default": "./dist/dmart.model.js"
+    },
+    "./dmart.service": {
+      "types": "./dist/dmart.service.d.ts",
+      "import": "./dist/dmart.service.js",
+      "default": "./dist/dmart.service.js"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE",
+    "CHANGELOG.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prepublishOnly": "npm run clean && npm run build",
+    "test": "echo \"no tests\" && exit 0"
+  },
   "devDependencies": {
     "@types/node": "^24.2.1",
     "@typescript-eslint/eslint-plugin": "^8.39.1",
