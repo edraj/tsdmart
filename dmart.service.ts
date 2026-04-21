@@ -357,7 +357,7 @@ export class Dmart {
         };
 
         if (!request.attributes || Object.keys(request.attributes).length === 0) {
-            request_record_body['attributes'] = {is_active: true, payload: {body: {}}};
+            request_record_body['attributes'] = {is_active: true, payload: {body: {}, content_type: 'json'}};
         } else {
             if (!Object.keys(request.attributes).includes('is_active')) {
                 request_record_body['attributes'].is_active = true;
