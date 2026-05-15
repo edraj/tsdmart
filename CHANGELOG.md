@@ -1,3 +1,11 @@
+## 5.3.4
+
+- Add `Dmart.getPlugins()` for the new dmart server `GET /info/plugins`
+  endpoint. Returns the standard Response envelope; each `records[i]`
+  carries `attributes.version` (the version the plugin announces from its
+  own binary) and `attributes.type` (`"hook"` | `"api"`). Pairs with the
+  cxb tools/info `Plugins` tab.
+
 ## 5.3.1
 
 - Ship compiled `dist/*.js` + `dist/*.d.ts` instead of raw `.ts` source.

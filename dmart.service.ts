@@ -575,6 +575,22 @@ export class Dmart {
     }
 
     /**
+     * Lists every plugin currently loaded by the dmart server, with the
+     * version each plugin announces from its own binary (assembly attribute
+     * for in-process .NET, dlsym(dmart_plugin_version) for native .so, the
+     * `version` field of the {"type":"info"} response for subprocess plugins).
+     * @returns Promise resolving to a Response envelope whose `records` array
+     *   carries one record per active plugin, each with attributes
+     *   `version` and `type` ("hook" | "api").
+     */
+    public static async getPlugins() {
+        const {data} = await Dmart.axiosDmartInstance.get<any>('info/plugins', {
+            headers,
+        });
+        return data;
+    }
+
+    /**
      * Sends an OTP (One-Time Password) request to a user
      * @param request - SendOTPRequest containing recipient information
      * @param acceptLanguage - Optional language preference for the OTP message (default: null)
