@@ -19,10 +19,8 @@ make sure you define `axiosDmartInstance` with your axios instance before import
 * `login(shortname: string, password: string) -> Promise<LoginResponse>` - Performs a login action (shortname).
 * `loginBy(credentials: dict, password: string) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
-* `otpRequest(request: SendOTPRequest, acceptLanguage: string | null = null) -> Promise<ApiResponse>` - Requests an OTP (One Time Password) for login.
-* `otpRequestLogin(request: SendOTPRequest, acceptLanguage: string | null = null) -> Promise<ApiResponse>` - Requests an OTP for login and returns a login response.
-* `passwordResetRequest(request: PasswordResetRequest) -> Promise<ApiResponse>` - Requests a password reset.
-* `confirmOtp(request: ConfirmOTPRequest) -> Promise<ApiResponse>` - Confirms the OTP (One Time Password) for login or password reset.
+* `otpRequest(request: SendOTPRequest, acceptLanguage: string | null = null) -> Promise<ApiResponse>` - Requests an OTP (One Time Password) for the given `purpose` (`login`, `reset`, `register`, or `verify-contact`), e.g. `Dmart.otpRequest({email: 'john_doe@example.com', purpose: OtpPurpose.login})`.
+* `confirmOtp(request: ConfirmOTPRequest) -> Promise<ApiResponse>` - Confirms an OTP code to verify a user's email/msisdn (call after `otpRequest` with purpose `verify-contact`).
 * `userReset(shortname: string) -> Promise<ApiResponse>` - Resets the user password by sending an OTP to the user's email.
 * `validatePassword(password: string) -> Promise<ApiResponse>` - Validates the password.
 * `createUser(request: ActionRequestRecord) -> Promise<ActionResponse>` - Creates a new user.

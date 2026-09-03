@@ -18,7 +18,6 @@ import type {
     GetChildrenRequest,
     GetPayloadRequest,
     LoginResponse,
-    PasswordResetRequest,
     ProfileResponse,
     ProgressTicketRequest,
     QueryRequest,
@@ -170,7 +169,11 @@ export class Dmart {
     }
 
     /**
-     * Updates an existing user's profile information
+     * Updates an existing user's profile information.
+     * Note: the underlying `user/profile` endpoint no longer accepts email, new_email,
+     * email_otp, msisdn, new_msisdn, or msisdn_otp attributes. To confirm or change a
+     * user's contact info, use otpRequest with purpose OtpPurpose.verifyContact followed
+     * by confirmOtp instead.
      * @param request - ActionRequestRecord containing user update data
      * @returns Promise resolving to ActionResponse with update result
      */
@@ -592,7 +595,8 @@ export class Dmart {
 
     /**
      * Sends an OTP (One-Time Password) request to a user
-     * @param request - SendOTPRequest containing recipient information
+     * @param request - SendOTPRequest containing recipient information and the purpose
+     *   of the request (login, reset, register, or verify-contact)
      * @param acceptLanguage - Optional language preference for the OTP message (default: null)
      * @returns Promise resolving to ApiResponse with OTP request result
      */
@@ -614,50 +618,14 @@ export class Dmart {
     }
 
     /**
-     * Sends an OTP (One-Time Password) request for login purposes
-     * @param request - SendOTPRequest containing recipient information for login OTP
-     * @param acceptLanguage - Optional language preference for the OTP message (default: null)
-     * @returns Promise resolving to ApiResponse with OTP login request result
-     */
-    public static async otpRequestLogin(
-        request: SendOTPRequest,
-        acceptLanguage: string | null = null
-    ) {
-        const requestHeaders = {...headers};
-        if (acceptLanguage) {
-            requestHeaders['Accept-Language'] = acceptLanguage;
-        }
-
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-            'user/otp-request-login',
-            request,
-            {headers: requestHeaders}
-        );
-        return data;
-    }
-
-    /**
-     * Initiates a password reset request for a user
-     * @param request - PasswordResetRequest containing user identification for password reset
-     * @returns Promise resolving to ApiResponse with password reset request result
-     */
-    public static async passwordResetRequest(request: PasswordResetRequest) {
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-            'user/password-reset-request',
-            request,
-            {headers}
-        );
-        return data;
-    }
-
-    /**
-     * Confirms an OTP (One-Time Password) code provided by the user
-     * @param request - ConfirmOTPRequest containing the OTP code and verification details
-     * @returns Promise resolving to ApiResponse with OTP confirmation result
+     * Confirms an OTP (One-Time Password) code to verify a user's contact (email/msisdn).
+     * Must be preceded by an otpRequest call with purpose OtpPurpose.verifyContact.
+     * @param request - ConfirmOTPRequest containing the OTP code and the email/msisdn being verified
+     * @returns Promise resolving to ApiResponse with the verification result
      */
     public static async confirmOtp(request: ConfirmOTPRequest) {
         const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-            'user/otp-confirm',
+            'user/verify-contact',
             request,
             {headers}
         );
