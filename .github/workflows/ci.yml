@@ -1,0 +1,71 @@
+# Builds the package and runs the test suite against the BUILT dist.
+#
+# Testing the compiled output is the point, not an accident: the suite asserts
+# on properties of the published artifact (the exact URLs the shipped client
+# requests, and whether Node's ESM resolver can import what we emit). A source-
+# level runner with its own resolution rules would pass on a dist that no
+# consumer can import -- which is exactly the bug that went unnoticed until
+# someone tried `node -e "import('@edraj/tsdmart')"`.
+name: CI
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+# Least privilege: this workflow only reads the tree. Publishing is a separate,
+# deliberate act run from a maintainer's machine.
+permissions:
+  contents: read
+
+# Supersede a PR's own earlier runs, but never a push to main: that run is the
+# record for a commit that has already landed, and cancelling it would leave a
+# merged commit with no verdict.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  test:
+    name: build and test (node ${{ matrix.node }})
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    strategy:
+      fail-fast: false
+      matrix:
+        # 22 is the floor: `node --test` only accepts a glob pattern from v22,
+        # and the suite is discovered via "test/**/*.test.mjs". 24 is current.
+        node: ["22", "24"]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+
+      # `npm ci` over `npm install`: fails loudly if package-lock.json has
+      # drifted from package.json rather than silently resolving something
+      # different from what a maintainer last published.
+      - run: npm ci
+
+      # `npm test` runs `npm run build` first, so a type error fails here too.
+      - run: npm test
+
+      # Guards the packaging contract from the other side: `files` is a
+      # whitelist, so a new source directory is excluded by default -- but a
+      # careless edit to that list could start shipping test/ or node_modules.
+      - name: the tarball contains only what we intend to publish
+        run: |
+          npm pack --dry-run --json \
+            | python3 -c "
+          import json, sys
+          files = {f['path'] for f in json.load(sys.stdin)[0]['files']}
+          unexpected = {f for f in files
+                        if not f.startswith('dist/')
+                        and f not in {'package.json', 'README.md', 'LICENSE', 'CHANGELOG.md'}}
+          assert not unexpected, f'unexpected files in tarball: {sorted(unexpected)}'
+          assert 'dist/index.js' in files, 'dist/index.js missing from tarball'
+          print(f'tarball OK: {len(files)} files')
+          "

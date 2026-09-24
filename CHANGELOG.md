@@ -51,6 +51,15 @@
   the scope tests assert on the exact URL the shipped package would request,
   with no network and no live server.
 
+- **Add CI.** A GitHub Actions workflow builds and runs the suite on Node 22
+  and 24 for every push to `main` and every pull request, and asserts the
+  packed tarball contains only `dist/` plus the four metadata files. Previously
+  nothing ran the tests except a maintainer remembering to.
+
+- Sync `package-lock.json`'s recorded version with `package.json` (it had
+  drifted to 5.5.0). `npm ci` only enforces dependency sync, so this was
+  cosmetic rather than breaking.
+
 ## 5.5.0
 
 - Relicense under LGPL-3.0-or-later.
