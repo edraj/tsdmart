@@ -1,7 +1,13 @@
 {
   "compilerOptions": {
-    "module": "es2022",
-    "moduleResolution": "bundler",
+    // nodenext, not bundler: this package ships as "type": "module" and is
+    // consumed by Node's ESM resolver, which requires explicit file extensions
+    // on relative imports. "bundler" permits extensionless specifiers and emits
+    // them verbatim, producing a dist that only works inside a bundler --
+    // `node -e "import('@edraj/tsdmart')"` failed with ERR_MODULE_NOT_FOUND.
+    // nodenext makes tsc reject a missing extension at compile time.
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
     "target": "es2022",
     "strict": true,
     "verbatimModuleSyntax": true,

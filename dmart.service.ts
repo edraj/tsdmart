@@ -5,7 +5,7 @@ import {
     QueryType,
     SortType,
     Status,
-} from "./dmart.model";
+} from "./dmart.model.js";
 import type {
     ActionRequest,
     ActionRequestRecord,
@@ -27,7 +27,7 @@ import type {
     SendOTPRequest,
     SubmitRequest,
     UploadWithPayloadRequest,
-} from "./dmart.model";
+} from "./dmart.model.js";
 
 
 export class Dmart {
@@ -103,6 +103,32 @@ export class Dmart {
     }
 
     /**
+     * Clears the stored authentication token, returning the client to the
+     * anonymous state. Called by logout(); also useful when a caller drops a
+     * session without hitting the logout endpoint.
+     */
+    public static clearToken() {
+        delete headers["Authorization"];
+    }
+
+    /**
+     * Picks the API scope to use when a caller did not specify one.
+     *
+     * Read endpoints exist in both scopes. `managed/*` requires a bearer token
+     * and answers 401 without one, so defaulting an anonymous client to
+     * `managed` could only ever fail — the public endpoint is the one that can
+     * actually serve it. An authenticated client keeps `managed`, which is the
+     * wider surface.
+     *
+     * Deliberately NOT used for writes: see uploadWithPayload, which stays on
+     * `managed` because silently routing an anonymous upload to the public
+     * endpoint would turn a guaranteed 401 into a real write attempt.
+     */
+    private static defaultScope(): DmartScope {
+        return Dmart.getToken() ? DmartScope.managed : DmartScope.public;
+    }
+
+    /**
      * Authenticates a user with shortname and password
      * @param shortname - The user's shortname (username)
      * @param password - The user's password
@@ -151,6 +177,10 @@ export class Dmart {
             {},
             {headers}
         );
+        // Drop the bearer token: without this the client stays "authenticated"
+        // from getToken()'s point of view, so scope auto-detection would keep
+        // choosing managed/* and 401 on every subsequent read.
+        Dmart.clearToken();
         return data;
     }
 
@@ -224,13 +254,14 @@ export class Dmart {
     /**
      * Executes a query against the Dmart API to retrieve data
      * @param query - QueryRequest object containing query parameters, filters, and sorting options
-     * @param scope - The scope for the query (default: DmartScope.managed)
+     * @param scope - API scope. Omit to auto-detect: `managed` when a token is set, `public` otherwise.
      * @returns Promise resolving to ApiQueryResponse with query results or null
      */
     public static async query(
         query: QueryRequest,
-        scope: DmartScope = DmartScope.managed
+        scope?: DmartScope
     ): Promise<ApiQueryResponse | null> {
+        scope ??= Dmart.defaultScope();
         if (query.type !== QueryType.spaces) {
             query.sort_type = query.sort_type || SortType.ascending;
             query.sort_by = query.sort_by || "created_at";
@@ -322,13 +353,14 @@ export class Dmart {
     /**
      * Retrieves a specific entry from the Dmart system
      * @param request - RetrieveEntryRequest containing entry identification and retrieval options
-     * @param scope - The scope for the retrieval (default: DmartScope.managed)
+     * @param scope - API scope. Omit to auto-detect: `managed` when a token is set, `public` otherwise.
      * @returns Promise resolving to ResponseEntry with entry data or null if not found
      */
     public static async retrieveEntry(
         request: RetrieveEntryRequest,
-        scope: DmartScope = DmartScope.managed
+        scope?: DmartScope
     ): Promise<ResponseEntry | null> {
+        scope ??= Dmart.defaultScope();
         if (request.validate_schema === null) {
             request.validate_schema = true;
         }
@@ -345,7 +377,8 @@ export class Dmart {
     /**
      * Uploads a resource with an attached payload file
      * @param request - UploadWithPayloadRequest containing resource data and payload file
-     * @param scope - The scope for the upload operation (default: DmartScope.managed)
+     * @param scope - The scope for the upload operation (default: DmartScope.managed).
+     *                Writes are NOT auto-detected — pass DmartScope.public explicitly if intended.
      * @returns Promise resolving to ApiResponse with upload result
      */
     public static async uploadWithPayload(
@@ -457,13 +490,14 @@ export class Dmart {
     /**
      * Generates a URL for accessing attachment resources
      * @param request - GetAttachmentURLRequest containing attachment identification parameters
-     * @param scope - The scope for the attachment URL (default: DmartScope.managed)
+     * @param scope - API scope. Omit to auto-detect: `managed` when a token is set, `public` otherwise.
      * @returns String URL for accessing the attachment
      */
     public static getAttachmentUrl(
         request: GetAttachmentURLRequest,
-        scope: DmartScope = DmartScope.managed
+        scope?: DmartScope
     ) {
+        scope ??= Dmart.defaultScope();
         const subpath = request.subpath.replace(
             /\/+$/,
             ""
@@ -486,13 +520,14 @@ export class Dmart {
     /**
      * Retrieves payload data for a specific resource
      * @param request - GetPayloadRequest containing payload identification parameters
-     * @param scope - The scope for the payload retrieval (default: DmartScope.managed)
+     * @param scope - API scope. Omit to auto-detect: `managed` when a token is set, `public` otherwise.
      * @returns Promise resolving to payload data
      */
     public static async getPayload(
         request: GetPayloadRequest,
-        scope: DmartScope = DmartScope.managed
+        scope?: DmartScope
     ) {
+        scope ??= Dmart.defaultScope();
         let url = `${scope}/payload/${request.resource_type}/${request.space_name}/${request.subpath}/${request.shortname}`;
 
         if (request.schemaShortname) {

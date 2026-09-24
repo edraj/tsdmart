@@ -1,6 +1,6 @@
 {
   "name": "@edraj/tsdmart",
-  "version": "5.6.0",
+  "version": "5.7.0",
   "description": "A TypeScript implementation of the Dmart that depends on axios.",
   "author": "Kefah T. Issa",
   "email": "kefah.issa@gmail.com",
@@ -35,8 +35,8 @@
   "scripts": {
     "build": "tsc",
     "clean": "rm -rf dist",
-    "prepublishOnly": "npm run clean && npm run build",
-    "test": "echo \"no tests\" && exit 0"
+    "prepublishOnly": "npm run clean && npm test",
+    "test": "npm run build && node --test \"test/**/*.test.mjs\""
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
