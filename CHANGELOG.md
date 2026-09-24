@@ -56,6 +56,17 @@
   packed tarball contains only `dist/` plus the four metadata files. Previously
   nothing ran the tests except a maintainer remembering to.
 
+- **`prepublishOnly` now runs the tests, not just the build.** It was
+  `clean && build`, so `npm publish` could ship a tarball whose tests fail —
+  the one path by which code reached npm without the suite running. It is now
+  `clean && test` (and `npm test` builds first, so nothing is lost). Verified
+  that a single failing assertion aborts `npm publish` with exit 1 *before* the
+  tarball is packed, rather than merely printing red.
+
+  Note this makes publishing require Node 22+, since the suite is discovered
+  with a `node --test` glob. That is a loud failure on an old Node rather than
+  a silent one, which is the right trade for a release step.
+
 - Sync `package-lock.json`'s recorded version with `package.json` (it had
   drifted to 5.5.0). `npm ci` only enforces dependency sync, so this was
   cosmetic rather than breaking.
