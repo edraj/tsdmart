@@ -25,6 +25,24 @@
   before, but it would have pinned scope auto-detection to `managed` and 401'd
   every read after a logout.
 
+- **Fix the published ESM: `dist` no longer emits extensionless relative
+  imports.** The package declares `"type": "module"`, so Node's ESM resolver
+  requires explicit file extensions — but `tsconfig`'s
+  `"moduleResolution": "bundler"` permits extensionless specifiers and tsc
+  emits them verbatim, so `dist/index.js` contained
+  `export * from "./dmart.model"` and `import('@edraj/tsdmart')` failed under
+  plain Node with `ERR_MODULE_NOT_FOUND`.
+
+  Bundlers (Vite, webpack, rollup) resolve extensionless imports themselves,
+  which is why every UI consumer worked and the bug stayed invisible — it only
+  bit direct Node consumers: scripts, SSR, tests, anything importing the
+  library outside a bundler.
+
+  Source specifiers now carry `.js` (TypeScript maps `./dmart.model.js` onto
+  `dmart.model.ts`), and `module`/`moduleResolution` move to `nodenext` so tsc
+  rejects a missing extension at compile time rather than shipping a dist that
+  only works inside a bundler.
+
 ## 5.5.0
 
 - Relicense under LGPL-3.0-or-later.

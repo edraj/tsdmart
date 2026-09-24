@@ -5,7 +5,7 @@ import {
     QueryType,
     SortType,
     Status,
-} from "./dmart.model";
+} from "./dmart.model.js";
 import type {
     ActionRequest,
     ActionRequestRecord,
@@ -27,7 +27,7 @@ import type {
     SendOTPRequest,
     SubmitRequest,
     UploadWithPayloadRequest,
-} from "./dmart.model";
+} from "./dmart.model.js";
 
 
 export class Dmart {
