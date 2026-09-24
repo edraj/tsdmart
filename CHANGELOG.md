@@ -1,3 +1,30 @@
+## 5.7.0
+
+- **Auto-detect the API scope from the token.** `query`, `retrieveEntry`,
+  `getAttachmentUrl` and `getPayload` no longer default to
+  `DmartScope.managed`; omitting `scope` now selects `managed` when a token is
+  set and `public` when one is not. An explicitly passed `scope` is still
+  honoured, so this is source-compatible.
+
+  The old default could only fail for an anonymous client: `managed/*` requires
+  a bearer token and answers 401 without one. The visible symptom was public
+  pages rendering their metadata correctly — the entry, its fields, even the
+  list of attachments — while every image and audio file came back 401, because
+  `getAttachmentUrl` built a `managed/payload/...` URL for a caller that had no
+  token. Callers that already pass `DmartScope.public` explicitly (as the
+  catalog UI does for `query` and `retrieveEntry`) are unaffected.
+
+  Writes are deliberately excluded: `uploadWithPayload` keeps its `managed`
+  default, because auto-detecting it would turn an anonymous upload from a
+  guaranteed 401 into a real write attempt against the public endpoint.
+
+- **`logout()` now clears the stored bearer token**, and a new
+  `Dmart.clearToken()` exposes the same for callers that drop a session without
+  hitting the endpoint. Previously the `Authorization` header survived logout,
+  so `getToken()` kept reporting a session that no longer existed — harmless
+  before, but it would have pinned scope auto-detection to `managed` and 401'd
+  every read after a logout.
+
 ## 5.5.0
 
 - Relicense under LGPL-3.0-or-later.
