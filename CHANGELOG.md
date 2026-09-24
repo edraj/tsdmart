@@ -43,6 +43,14 @@
   rejects a missing extension at compile time rather than shipping a dist that
   only works inside a bundler.
 
+- **Add a test suite.** `npm test` now builds and runs 16 tests against the
+  built `dist` via Node's built-in runner — no new dependencies. Testing the
+  compiled output rather than the source is deliberate: both fixes above are
+  properties of the *published artifact*, and the packaging one is invisible
+  from source. A fake axios instance (via the existing `setAxiosInstance`) lets
+  the scope tests assert on the exact URL the shipped package would request,
+  with no network and no live server.
+
 ## 5.5.0
 
 - Relicense under LGPL-3.0-or-later.

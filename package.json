@@ -36,7 +36,7 @@
     "build": "tsc",
     "clean": "rm -rf dist",
     "prepublishOnly": "npm run clean && npm run build",
-    "test": "echo \"no tests\" && exit 0"
+    "test": "npm run build && node --test \"test/**/*.test.mjs\""
   },
   "devDependencies": {
     "@types/node": "^26.2.0",
