@@ -109,7 +109,19 @@ export type ProfileResponseRecord = ApiResponseRecord & {
     is_msisdn_verified: boolean;
     force_password_change: boolean;
     permissions: Record<string, Permission>;
-  };
+  } & UserDirectoryFields;
+};
+
+/**
+ * A user's directory fields (dmart 1.6+): the mail address the deployment
+ * hosts for them, the aliases that deliver into it, and the services they may
+ * use. Distinct from `email`, the contact address. Set only through the
+ * managed API; absent from servers that predate them.
+ */
+export type UserDirectoryFields = {
+  mailbox?: string | null;
+  mail_aliases?: string[];
+  services?: string[];
 };
 
 export enum ActionType {
@@ -310,7 +322,7 @@ export type MetaExtended = {
   workflow_shortname: string;
   state: string;
   is_open: boolean;
-};
+} & UserDirectoryFields;
 
 export type ResponseEntry = MetaExtended & {
   uuid: string;

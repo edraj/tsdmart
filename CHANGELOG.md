@@ -1,3 +1,11 @@
+## Unreleased
+
+- **User directory fields in the types.** `UserDirectoryFields` (`mailbox`,
+  `mail_aliases`, `services`) is added to `ProfileResponseRecord.attributes`
+  and to `MetaExtended`, matching what dmart returns for users once it has
+  them. All three are optional, so older servers type-check unchanged. Search
+  them with `@mailbox:`, `@mail_aliases:` and `@services:`.
+
 ## 5.7.0
 
 - **Auto-detect the API scope from the token.** `query`, `retrieveEntry`,
