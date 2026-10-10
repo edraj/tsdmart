@@ -1,4 +1,4 @@
-## Unreleased
+## 5.8.0
 
 - **User directory fields in the types.** `UserDirectoryFields` (`mailbox`,
   `mail_aliases`, `services`) is added to `ProfileResponseRecord.attributes`
