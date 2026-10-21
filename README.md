@@ -27,6 +27,7 @@ make sure you define `axiosDmartInstance` with your axios instance before import
 * `updateUser(request: ActionRequestRecord) -> Promise<ActionResponse>` - Updates an existing user.
 * `checkExisting(prop: string, value: string) -> Promise<ResponseEntry>` - Checks if a user exists.
 * `getProfile() -> Promise<ProfileResponse>` - Gets the profile of the current user.
+* `getPermissions() -> Promise<Record<string, Permission>>` - Gets the current user's permission map (`GET /user/permissions`, or the profile's copy on a server without that route) and stores it in `localStorage["permissions"]`.
 * `query(query: QueryRequest) -> Promise<ApiQueryResponse | null>` - Performs a query action.
 * `csv(query: any) -> Promise<ApiQueryResponse>` - Query the entries as csv file.
 * `space(action: ActionRequest) -> Promise<ActionResponse>` - Performs actions on spaces.

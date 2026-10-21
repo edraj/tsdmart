@@ -108,8 +108,19 @@ export type ProfileResponseRecord = ApiResponseRecord & {
     is_email_verified: boolean;
     is_msisdn_verified: boolean;
     force_password_change: boolean;
-    permissions: Record<string, Permission>;
+    /**
+     * Deprecated by dmart in favour of GET /user/permissions
+     * ({@link Dmart.getPermissions}), and absent once a server drops it.
+     */
+    permissions?: Record<string, Permission>;
   } & UserDirectoryFields;
+};
+
+/** GET /user/permissions: the caller's resolved permission map. */
+export type PermissionsResponse = {
+  status: Status;
+  error?: Error;
+  attributes?: { permissions?: Record<string, Permission> };
 };
 
 /**

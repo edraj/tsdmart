@@ -18,6 +18,8 @@ import type {
     GetChildrenRequest,
     GetPayloadRequest,
     LoginResponse,
+    Permission,
+    PermissionsResponse,
     ProfileResponse,
     ProgressTicketRequest,
     QueryRequest,
@@ -239,16 +241,43 @@ export class Dmart {
             headers,
         });
         if (typeof localStorage !== "undefined" && data.status === "success") {
-            localStorage.setItem(
-                "permissions",
-                JSON.stringify((data?.records ?? [{}])[0]?.attributes.permissions)
-            );
-            localStorage.setItem(
-                "roles",
-                JSON.stringify((data?.records ?? [{}])[0]?.attributes?.["roles"])
-            );
+            const attributes = (data?.records ?? [{}])[0]?.attributes;
+            // dmart deprecates the profile's copy for GET /user/permissions
+            // (getPermissions). Once a server leaves it out, keep what is
+            // stored rather than writing "undefined" over it.
+            if (attributes?.permissions !== undefined) {
+                localStorage.setItem("permissions", JSON.stringify(attributes.permissions));
+            }
+            localStorage.setItem("roles", JSON.stringify(attributes?.["roles"]));
         }
         return data;
+    }
+
+    /**
+     * Retrieves the caller's resolved permission map from GET /user/permissions
+     * (keyed `"space:subpath:resource_type"`) and stores it in
+     * `localStorage["permissions"]`, where {@link getProfile} has always put it.
+     * The route answers with an ETag, so a browser revalidates the map rather
+     * than downloading it again. A server without the route (404) is answered
+     * from the profile's copy. Any other failure throws, as other calls do.
+     * @returns The permission map
+     */
+    public static async getPermissions(): Promise<Record<string, Permission>> {
+        const response = await Dmart.axiosDmartInstance.get<PermissionsResponse>("user/permissions", {
+            headers,
+            validateStatus: (status: number) => (status >= 200 && status < 300) || status === 404,
+        });
+        let map: Record<string, Permission> | undefined;
+        if (response.status === 404) {
+            map = (await Dmart.getProfile())?.records?.[0]?.attributes?.permissions;
+        } else if (response.data?.status === "success") {
+            map = response.data.attributes?.permissions;
+        }
+        map ??= {};
+        if (typeof localStorage !== "undefined") {
+            localStorage.setItem("permissions", JSON.stringify(map));
+        }
+        return map;
     }
 
     /**
