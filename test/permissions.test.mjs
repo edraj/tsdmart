@@ -52,18 +52,34 @@ describe("getPermissions", () => {
     assert.deepEqual(JSON.parse(items.get("permissions")), map);
   });
 
-  test("falls back to the profile's map on a server without the route", async () => {
+  // What a dmart without the route sends: the unmatched-route rewrite.
+  const invalidRoute = { status: "failed", error: { type: "request", code: 230, message: "Route not found: GET /user/permissions" } };
+
+  for (const status of [422, 404]) {
+    test(`falls back to the profile's map on a server without the route (${status})`, async () => {
+      const calls = installServer({
+        "user/permissions": { status, data: invalidRoute },
+        "user/profile": { data: profile({ permissions: map }) },
+      });
+      assert.deepEqual(await Dmart.getPermissions(), map);
+      assert.deepEqual(calls, ["user/permissions", "user/profile"]);
+      assert.deepEqual(JSON.parse(items.get("permissions")), map);
+    });
+  }
+
+  test("a 404 without dmart's envelope also falls back", async () => {
     const calls = installServer({ "user/profile": { data: profile({ permissions: map }) } });
     assert.deepEqual(await Dmart.getPermissions(), map);
     assert.deepEqual(calls, ["user/permissions", "user/profile"]);
-    assert.deepEqual(JSON.parse(items.get("permissions")), map);
   });
 
-  test("throws on any other failure", async () => {
-    installServer({ "user/permissions": { status: 401, data: { status: "failed" } } });
-    await assert.rejects(Dmart.getPermissions(), /status 401/);
-    assert.equal(items.has("permissions"), false);
-  });
+  for (const [status, code] of [[401, 49], [422, 400]]) {
+    test(`throws on any other failure (${status}, code ${code})`, async () => {
+      installServer({ "user/permissions": { status, data: { status: "failed", error: { type: "request", code } } } });
+      await assert.rejects(Dmart.getPermissions(), new RegExp(`status ${status}`));
+      assert.equal(items.has("permissions"), false);
+    });
+  }
 });
 
 describe("getProfile", () => {

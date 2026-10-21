@@ -7,7 +7,8 @@
   `localStorage["permissions"]`, where `getProfile()` has always put it, so
   code that reads the key keeps working. The route sends an ETag, so a browser
   revalidates the map instead of downloading it again. On a server without the
-  route (a 404), the map comes from the profile.
+  route (it answers `INVALID_ROUTE`, code 230, with HTTP 422; a bare 404 counts
+  too), the map comes from the profile. Any other failure throws.
 - **`getProfile()` no longer overwrites a stored map with `undefined`.** It
   still writes `localStorage["permissions"]` while the profile carries the map,
   and leaves the stored value alone once a server stops sending it.

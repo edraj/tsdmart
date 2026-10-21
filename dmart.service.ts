@@ -32,6 +32,9 @@ import type {
 } from "./dmart.model.js";
 
 
+// dmart's error code for a route the server does not have.
+const INVALID_ROUTE = 230;
+
 export class Dmart {
     static axiosDmartInstance: AxiosInstance;
 
@@ -258,20 +261,24 @@ export class Dmart {
      * (keyed `"space:subpath:resource_type"`) and stores it in
      * `localStorage["permissions"]`, where {@link getProfile} has always put it.
      * The route answers with an ETag, so a browser revalidates the map rather
-     * than downloading it again. A server without the route (404) is answered
-     * from the profile's copy. Any other failure throws, as other calls do.
+     * than downloading it again. A server without the route answers
+     * INVALID_ROUTE (230, with HTTP 422) and is answered from the profile's
+     * copy. Any other failure throws, as other calls do.
      * @returns The permission map
      */
     public static async getPermissions(): Promise<Record<string, Permission>> {
-        const response = await Dmart.axiosDmartInstance.get<PermissionsResponse>("user/permissions", {
-            headers,
-            validateStatus: (status: number) => (status >= 200 && status < 300) || status === 404,
-        });
         let map: Record<string, Permission> | undefined;
-        if (response.status === 404) {
+        try {
+            const {data} = await Dmart.axiosDmartInstance.get<PermissionsResponse>("user/permissions", {headers});
+            map = data?.attributes?.permissions;
+        } catch (error) {
+            const response = (error as {
+                response?: { status?: number; data?: { error?: { code?: number } } };
+            })?.response;
+            if (response?.data?.error?.code !== INVALID_ROUTE && response?.status !== 404) {
+                throw error;
+            }
             map = (await Dmart.getProfile())?.records?.[0]?.attributes?.permissions;
-        } else if (response.data?.status === "success") {
-            map = response.data.attributes?.permissions;
         }
         map ??= {};
         if (typeof localStorage !== "undefined") {
