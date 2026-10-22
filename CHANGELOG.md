@@ -1,3 +1,20 @@
+## 5.9.0
+
+- **`getPermissions()` reads the permission map from its own route.** dmart
+  now serves the caller's map at `GET /user/permissions` and deprecates the
+  copy inside `GET /user/profile`, which made the profile the heaviest call an
+  app makes on every load. `getPermissions()` returns the map and stores it in
+  `localStorage["permissions"]`, where `getProfile()` has always put it, so
+  code that reads the key keeps working. The route sends an ETag, so a browser
+  revalidates the map instead of downloading it again. On a server without the
+  route (it answers `INVALID_ROUTE`, code 230, with HTTP 422; a bare 404 counts
+  too), the map comes from the profile. Any other failure throws.
+- **`getProfile()` no longer overwrites a stored map with `undefined`.** It
+  still writes `localStorage["permissions"]` while the profile carries the map,
+  and leaves the stored value alone once a server stops sending it.
+  `ProfileResponseRecord.attributes.permissions` is optional for the same
+  reason. A new `PermissionsResponse` type describes the route.
+
 ## 5.8.0
 
 - **User directory fields in the types.** `UserDirectoryFields` (`mailbox`,
