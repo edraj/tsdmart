@@ -2,6 +2,7 @@ import type {AxiosInstance} from "axios";
 import {
     DmartScope,
     headers,
+    HealthType,
     QueryType,
     SortType,
     Status,
@@ -12,12 +13,17 @@ import type {
     ActionResponse,
     ApiQueryResponse,
     ApiResponse,
+    ClientConfigResponse,
     ConfirmOTPRequest,
-    FetchDataAssetRequest,
+    CreateUserRequest,
+    CsvOptions,
+    CsvPreviewResponse,
     GetAttachmentURLRequest,
     GetChildrenRequest,
     GetPayloadRequest,
+    LoginOptions,
     LoginResponse,
+    PasswordResetConfirmRequest,
     Permission,
     PermissionsResponse,
     ProfileResponse,
@@ -27,6 +33,7 @@ import type {
     ResponseEntry,
     RetrieveEntryRequest,
     SendOTPRequest,
+    SpaceHealthResponse,
     SubmitRequest,
     UploadWithPayloadRequest,
 } from "./dmart.model.js";
@@ -37,6 +44,9 @@ const INVALID_ROUTE = 230;
 
 export class Dmart {
     static axiosDmartInstance: AxiosInstance;
+
+    // Sent as X-DeviceId on sign-in when set (see setDeviceId).
+    private static deviceId: string | null = null;
 
     /**
      * Sets the Axios instance to be used for all HTTP requests
@@ -117,6 +127,31 @@ export class Dmart {
     }
 
     /**
+     * Sets the device this client signs in from. When set, {@link login} and
+     * {@link loginBy} send it as the `X-DeviceId` header, which dmart
+     * (1.7.3+) uses when the body names no `device_id`; a `device_id` in the
+     * body wins. dmart 1.7.2+ requires a device for mobile accounts, and the
+     * first sign-in from a new device answers `OTP_NEEDED` (115).
+     * @param deviceId - A stable id for this device, or null to stop sending one
+     */
+    public static setDeviceId(deviceId: string | null) {
+        Dmart.deviceId = deviceId ? deviceId : null;
+    }
+
+    /**
+     * Gets the device id set with {@link setDeviceId}
+     * @returns The device id, or null if none is set
+     */
+    public static getDeviceId() {
+        return Dmart.deviceId;
+    }
+
+    // Headers for a sign-in call: the shared headers plus X-DeviceId when set.
+    private static loginHeaders(): Record<string, string> {
+        return Dmart.deviceId ? {...headers, "X-DeviceId": Dmart.deviceId} : headers;
+    }
+
+    /**
      * Picks the API scope to use when a caller did not specify one.
      *
      * Read endpoints exist in both scopes. `managed/*` requires a bearer token
@@ -134,16 +169,28 @@ export class Dmart {
     }
 
     /**
-     * Authenticates a user with shortname and password
+     * Authenticates a user with shortname and password.
+     *
+     * Some sign-ins take two steps. An admin's password sign-in (dmart
+     * 1.6.6+), and the first sign-in from a new device (1.7.2+), answer
+     * `OTP_NEEDED` (115) and send a code; call `login` again with the same
+     * password, the same `device_id` and `{otp}`. A password sign-in that
+     * names an unverified email or phone answers `USER_ISNT_VERIFIED` (11).
+     * See {@link DmartErrorCode}.
      * @param shortname - The user's shortname (username)
      * @param password - The user's password
+     * @param options - `otp` for the second step; `device_id` for this call
+     *   (otherwise the one from {@link setDeviceId} goes as `X-DeviceId`)
      * @returns Promise resolving to LoginResponse containing authentication data and access token
      */
-    public static async login(shortname: string, password: string) {
+    public static async login(shortname: string, password: string, options: LoginOptions = {}) {
+        const body: Record<string, string> = {shortname, password};
+        if (options.otp) body["otp"] = options.otp;
+        if (options.device_id) body["device_id"] = options.device_id;
         const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
             'user/login',
-            {shortname, password},
-            {headers}
+            body,
+            {headers: Dmart.loginHeaders()}
         );
         const data: LoginResponse = response.data;
         if (data.status === Status.success && data.records.length > 0) {
@@ -153,8 +200,10 @@ export class Dmart {
     }
 
     /**
-     * Authenticates a user with custom credentials and password
-     * @param credentials - Object containing login credentials (e.g., email, phone, etc.)
+     * Authenticates a user with custom credentials and password. The
+     * credentials may also carry `otp` (the second step after `OTP_NEEDED`,
+     * 115) and `device_id`; see {@link login} for the two-step flow.
+     * @param credentials - Object containing login credentials (e.g., email, msisdn, otp, device_id)
      * @param password - The user's password
      * @returns Promise resolving to LoginResponse containing authentication data and access token
      */
@@ -162,7 +211,7 @@ export class Dmart {
         const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
             'user/login',
             {...credentials, password},
-            {headers}
+            {headers: Dmart.loginHeaders()}
         );
         const data: LoginResponse = response.data;
         if (data.status === Status.success && data.records.length > 0) {
@@ -190,11 +239,21 @@ export class Dmart {
     }
 
     /**
-     * Creates a new user account
-     * @param request - ActionRequestRecord containing user creation data
+     * Registers a new user account (POST user/create).
+     *
+     * Since dmart 1.7.10 open registration always needs a code for each
+     * address: request one with `otpRequest({purpose: OtpPurpose.register,
+     * email|msisdn})` and send it as `attributes.email_otp` /
+     * `attributes.msisdn_otp`. A top-level `shortname` is the username the
+     * registrant chose (dmart 1.7.9+), or `"auto"` for one the server makes;
+     * older servers ignore it. Use `checkExisting("shortname", ...)` first to
+     * see whether it is free and meets the username rule.
+     * @param request - `{shortname?, attributes}`. An ActionRequestRecord is
+     *   still accepted; note that its `shortname` is now honoured as the
+     *   chosen username.
      * @returns Promise resolving to ActionResponse with creation result
      */
-    public static async createUser(request: ActionRequestRecord) {
+    public static async createUser(request: CreateUserRequest | ActionRequestRecord) {
         const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
             'user/create',
             request,
@@ -208,7 +267,10 @@ export class Dmart {
      * Note: the underlying `user/profile` endpoint no longer accepts email, new_email,
      * email_otp, msisdn, new_msisdn, or msisdn_otp attributes. To confirm or change a
      * user's contact info, use otpRequest with purpose OtpPurpose.verifyContact followed
-     * by confirmOtp instead.
+     * by confirmOtp instead. Changing the password always needs `old_password`
+     * next to `password` (dmart 1.6.6+), even under `force_password_change`;
+     * an account without a password sets its first one with
+     * {@link passwordResetConfirm}.
      * @param request - ActionRequestRecord containing user update data
      * @returns Promise resolving to ActionResponse with update result
      */
@@ -312,20 +374,55 @@ export class Dmart {
     }
 
     /**
-     * Exports query results as CSV format
-     * @param query - Query object with parameters for CSV export
-     * @returns Promise resolving to ApiQueryResponse containing CSV data
+     * Exports query results as CSV. dmart answers the file itself
+     * (`text/csv`), so this resolves to the CSV text, not a JSON envelope.
+     * A refusal still rejects as an axios error whose `response.data` is
+     * dmart's JSON error.
+     * @param query - Query object with parameters for CSV export; it is not modified
+     * @param options - `preview: true` asks what the CSV would hold
+     *   (`exported`, `total`, `truncated`, `message`, ...) instead of the CSV
+     * @returns Promise resolving to the CSV text, or with `preview: true` the preview
      */
-    public static async csv(query: QueryRequest): Promise<ApiQueryResponse> {
-        query.sort_type = query.sort_type || SortType.ascending;
-        query.sort_by = "created_at";
-        query.subpath = query.subpath.replace(/\/+/g, "/");
-        const {data} = await Dmart.axiosDmartInstance.post<ApiQueryResponse>(
-            'managed/csv',
-            query,
-            {headers}
-        );
-        return data;
+    public static csv(query: QueryRequest): Promise<string>;
+    public static csv(query: QueryRequest, options: CsvOptions & { preview: true }): Promise<CsvPreviewResponse>;
+    public static csv(query: QueryRequest, options?: CsvOptions): Promise<string | CsvPreviewResponse>;
+    public static async csv(query: QueryRequest, options: CsvOptions = {}): Promise<string | CsvPreviewResponse> {
+        // A copy: the caller's query object is left as it was. created_at is
+        // only the default order, for a query that names none.
+        const body: QueryRequest = {
+            ...query,
+            sort_type: query.sort_type || SortType.ascending,
+            sort_by: query.sort_by || "created_at",
+            subpath: query.subpath.replace(/\/+/g, "/"),
+        };
+        if (options.preview) {
+            const {data} = await Dmart.axiosDmartInstance.post<CsvPreviewResponse>(
+                'managed/csv?preview=1',
+                body,
+                {headers}
+            );
+            return data;
+        }
+        try {
+            const {data} = await Dmart.axiosDmartInstance.post<string>(
+                'managed/csv',
+                body,
+                {headers, responseType: "text"}
+            );
+            return typeof data === "string" ? data : String(data ?? "");
+        } catch (error) {
+            // Asked for text, a refusal's JSON body arrives as a string too:
+            // hand callers dmart's error envelope, as every other call does.
+            const response = (error as { response?: { data?: unknown } } | null)?.response;
+            if (response && typeof response.data === "string") {
+                try {
+                    response.data = JSON.parse(response.data);
+                } catch {
+                    // Not JSON (a proxy's error page, say): leave it as text.
+                }
+            }
+            throw error;
+        }
     }
 
     /**
@@ -337,7 +434,7 @@ export class Dmart {
         request: ResourcesFromCSVRequest
     ) {
         let csvUrl = `/managed/resources_from_csv/${request.resourceType}/${request.space_name}/${request.subpath}`;
-        const params: Record<string, boolean> = {};
+        const params: Record<string, boolean | number> = {};
         if (request.schema) {
             csvUrl += `/${request.schema}`;
         }
@@ -347,6 +444,9 @@ export class Dmart {
 
         if (request.isUpdate) {
             params['is_update'] = request.isUpdate;
+        }
+        if (request.firstRow) {
+            params['first_row'] = request.firstRow;
         }
 
         const multipartHeaders = {...headers, "Content-Type": "multipart/form-data"};
@@ -397,11 +497,8 @@ export class Dmart {
         scope?: DmartScope
     ): Promise<ResponseEntry | null> {
         scope ??= Dmart.defaultScope();
-        if (request.validate_schema === null) {
-            request.validate_schema = true;
-        }
         if (!request.subpath || request.subpath === "/") request.subpath = "__root__";
-        const url = `${scope}/entry/${request.resource_type}/${request.space_name}/${request.subpath}/${request.shortname}?retrieve_json_payload=${request.retrieve_json_payload}&retrieve_attachments=${request.retrieve_attachments}&validate_schema=${request.validate_schema}`;
+        const url = `${scope}/entry/${request.resource_type}/${request.space_name}/${request.subpath}/${request.shortname}?retrieve_json_payload=${request.retrieve_json_payload}&retrieve_attachments=${request.retrieve_attachments}`;
         const {data} = await Dmart.axiosDmartInstance.get<ResponseEntry>(
             `${url.replace(/\/+/g, "/")}`,
             {headers}
@@ -453,30 +550,6 @@ export class Dmart {
             {headers: _headers}
         );
 
-        return data;
-    }
-
-    /**
-     * Fetches data assets from the Dmart system with optional SQL query filtering
-     * @param request - FetchDataAssetRequest containing asset identification and query parameters
-     * @returns Promise resolving to data asset response
-     */
-    public static async fetchDataAsset(
-        request: FetchDataAssetRequest,
-    ) {
-        const {data} = await Dmart.axiosDmartInstance.post(
-            'managed/data-asset',
-            {
-                space_name: request.spaceName,
-                resource_type: request.resourceType,
-                data_asset_type: request.dataAssetType,
-                subpath: request.subpath,
-                shortname: request.shortname,
-                query_string: request.query_string ?? "SELECT * FROM file",
-                filter_data_assets: request.filter_data_assets,
-            },
-            {headers}
-        );
         return data;
     }
 
@@ -542,14 +615,20 @@ export class Dmart {
     }
 
     /**
-     * Retrieves health information and statistics for a specific space
+     * Runs the health checks on a space (GET managed/health/{health_type}/{space}).
+     * Global admins only: anyone else is refused.
      * @param space_name - The name of the space to check health for
-     * @returns Promise resolving to ApiQueryResponse with health data and folders report
+     * @param health_type - `soft` (default), `hard` or `all`; see {@link HealthType}
+     * @returns Promise resolving to the checks run, each with a count and samples
      */
-    public static async getSpaceHealth(space_name: string) {
-        const {data} = await Dmart.axiosDmartInstance.get<
-            ApiQueryResponse & { attributes: { folders_report: Record<string, unknown> } }
-        >(`managed/health/${space_name}`, {headers});
+    public static async getSpaceHealth(
+        space_name: string,
+        health_type: HealthType | `${HealthType}` = HealthType.soft
+    ) {
+        const {data} = await Dmart.axiosDmartInstance.get<SpaceHealthResponse>(
+            `managed/health/${health_type}/${space_name}`,
+            {headers}
+        );
         return data;
     }
 
@@ -649,6 +728,22 @@ export class Dmart {
     }
 
     /**
+     * Retrieves the settings a client should follow (GET public/client-config,
+     * dmart 1.6.12+): OTP length and timing, query limits, upload size, the
+     * request timeout, and whether custom password/username rules apply, with
+     * their hints. Needs no sign-in, and sends no token: a stale one must not
+     * keep a signed-out client from reading it.
+     * @returns Promise resolving to a response whose `attributes` is a {@link ClientConfig}
+     */
+    public static async getClientConfig() {
+        const {Authorization: _token, ...publicHeaders} = headers;
+        const {data} = await Dmart.axiosDmartInstance.get<ClientConfigResponse>('public/client-config', {
+            headers: publicHeaders,
+        });
+        return data;
+    }
+
+    /**
      * Lists every plugin currently loaded by the dmart server, with the
      * version each plugin announces from its own binary (assembly attribute
      * for in-process .NET, dlsym(dmart_plugin_version) for native .so, the
@@ -691,6 +786,9 @@ export class Dmart {
     /**
      * Confirms an OTP (One-Time Password) code to verify a user's contact (email/msisdn).
      * Must be preceded by an otpRequest call with purpose OtpPurpose.verifyContact.
+     * Changing the address (dmart 1.6.7+) also needs `password` on an account
+     * that has one, or `current_code` (a verify-contact code sent to the
+     * address the account already has) on one that does not.
      * @param request - ConfirmOTPRequest containing the OTP code and the email/msisdn being verified
      * @returns Promise resolving to ApiResponse with the verification result
      */
@@ -704,14 +802,17 @@ export class Dmart {
     }
 
     /**
-     * Resets a user's account or session state
-     * @param shortname - The shortname (username) of the user to reset
-     * @returns Promise resolving to ApiResponse with user reset result
+     * Sets a new password with a reset code (POST user/password-reset-confirm).
+     * Request the code first with `otpRequest({purpose: OtpPurpose.reset, ...})`.
+     * Name exactly one of `shortname`, `email` or `msisdn`; a server may
+     * refuse `shortname` and expect an address.
+     * @param request - The code, the new password and the account's identifier
+     * @returns Promise resolving to ApiResponse with the reset result
      */
-    public static async userReset(shortname: string) {
+    public static async passwordResetConfirm(request: PasswordResetConfirmRequest) {
         const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
-            'user/reset',
-            {shortname},
+            'user/password-reset-confirm',
+            request,
             {headers}
         );
         return data;

@@ -14,6 +14,57 @@ export interface ClientError {
     response: ApiResponse
 }
 
+/**
+ * `Error.type` values dmart sends. `server` (dmart 1.7+) marks a failure on
+ * the server's side, such as `PASSWORD_HASHING_BUSY` or `REQUEST_TIMEOUT`.
+ * The field itself stays a plain string, since some routes send others.
+ */
+export enum ErrorType {
+  auth = "auth",
+  jwtauth = "jwtauth",
+  db = "db",
+  request = "request",
+  create = "create",
+  exception = "exception",
+  server = "server",
+  restriction = "restriction",
+  internal = "internal",
+  media = "media",
+  attachment = "attachment",
+  qr = "qr",
+  channel_auth = "channel_auth",
+}
+
+/**
+ * The `Error.code` values a client most often has to branch on. These are
+ * dmart's `InternalErrorCode` integers, which never change meaning.
+ */
+export enum DmartErrorCode {
+  // Sign-in and accounts
+  INVALID_USERNAME_AND_PASS = 10,
+  USER_ISNT_VERIFIED = 11,
+  SESSION = 50,
+  PASSWORD_RESET_ERROR = 102,
+  USER_ACCOUNT_LOCKED = 110,
+  OTP_NEEDED = 115,
+  NOT_ALLOWED = 401,
+  // Codes
+  OTP_RESEND_BLOCKED = 103,
+  OTP_INVALID = 307,
+  OTP_EXPIRED = 308,
+  // Data
+  MISSING_DATA = 202,
+  INVALID_ROUTE = 230,
+  INVALID_TICKET_STATUS = 300,
+  SHORTNAME_ALREADY_EXIST = 400,
+  INVALID_DATA = 402,
+  CONFLICT = 409,
+  DATA_SHOULD_BE_UNIQUE = 415,
+  // Server
+  PASSWORD_HASHING_BUSY = 503,
+  REQUEST_TIMEOUT = 504,
+}
+
 export type Error = {
   type: string;
   code: number;
@@ -45,6 +96,8 @@ export enum UserType {
   web = "web",
   mobile = "mobile",
   bot = "bot",
+  /** dmart 1.6.6+. Signs in with a password and a code. */
+  admin = "admin",
 }
 
 export enum OtpPurpose {
@@ -70,7 +123,109 @@ export interface ConfirmOTPRequest {
   code: string;
   email?: string;
   msisdn?: string;
+  /**
+   * Needed to CHANGE the email or phone of an account that has a password
+   * (an admin always does). Not needed to confirm the address already on
+   * the account.
+   */
+  password?: string;
+  /**
+   * Needed instead of `password` to change the address of an account with
+   * no password: a verify-contact code sent to the address it already has
+   * (its phone, else its email).
+   */
+  current_code?: string;
 }
+
+/**
+ * POST /user/password-reset-confirm. Name exactly one of `shortname`,
+ * `email` or `msisdn` (a server may refuse `shortname`), with the code from
+ * `otpRequest({purpose: OtpPurpose.reset, ...})` and the new password.
+ */
+export interface PasswordResetConfirmRequest {
+  otp: string;
+  password: string;
+  shortname?: string;
+  email?: string;
+  msisdn?: string;
+}
+
+/**
+ * POST /user/create (self-registration).
+ *
+ * `shortname` is the username the registrant chose, or `"auto"`/absent for
+ * one the server makes (dmart 1.7.9+; older servers ignore it). It must be
+ * free and meet the server's username rule (see {@link ClientConfig}).
+ *
+ * `attributes` carries `email` and/or `msisdn`, `password`, `displayname`,
+ * and the codes proving each address: `email_otp` / `msisdn_otp`, sent by
+ * `otpRequest({purpose: OtpPurpose.register, ...})`. Since dmart 1.7.10 open
+ * registration always needs those codes.
+ */
+export interface CreateUserRequest {
+  shortname?: string;
+  attributes: Record<string, any>;
+}
+
+/** Options for a password sign-in. */
+export interface LoginOptions {
+  /**
+   * The code, for the second step after an `OTP_NEEDED` (115) answer. Send
+   * it together with the same identifier, password and `device_id`.
+   */
+  otp?: string;
+  /**
+   * The device signing in. dmart 1.7.2+ requires one for mobile accounts.
+   * Overrides {@link Dmart.setDeviceId} for this call.
+   */
+  device_id?: string;
+}
+
+/** GET /public/client-config (dmart 1.6.12+): settings a client should follow. */
+export interface ClientConfig {
+  /** Milliseconds a client should wait before giving up on a request. */
+  backend_timeout: number;
+  otp_length: number;
+  /** Seconds before a code may be requested again. */
+  otp_resend_after: number;
+  /** Seconds a code stays valid. */
+  otp_token_ttl: number;
+  max_upload_size_mb: number;
+  /** The `limit` the server uses when a query sends none. */
+  default_query_limit: number;
+  max_query_limit: number;
+  ui_list_limit: number;
+  password_rule_custom?: boolean;
+  password_hint?: string;
+  /** dmart 1.7.9+. */
+  username_rule_custom?: boolean;
+  /** dmart 1.7.9+. */
+  username_hint?: string;
+}
+
+export type ClientConfigResponse = {
+  status: Status;
+  error?: Error;
+  attributes: ClientConfig;
+};
+
+/** The checks GET /managed/health/{health_type}/{space} can run. */
+export enum HealthType {
+  soft = "soft",
+  hard = "hard",
+  all = "all",
+}
+
+export type SpaceHealthResponse = {
+  status: Status;
+  error?: Error;
+  attributes: {
+    space_name: string;
+    health_type: string;
+    total_issues: number;
+    checks: Array<{ name: string; count: number; samples: Array<unknown> }>;
+  };
+};
 
 export type LoginResponseRecord = ApiResponseRecord & {
   attributes: {
@@ -226,9 +381,14 @@ export type QueryRequest = {
   retrieve_json_payload?: boolean;
   retrieve_attachments?: boolean;
   retrieve_total?: boolean;
+  /** @deprecated dmart ignores it (removed in 1.5.0). */
   validate_schema?: boolean;
   jq_filter?: string;
   exact_subpath?: boolean;
+  /**
+   * Leave it out for the server's default (`default_query_limit`, normally
+   * 10). `-1` asks for `max_query_limit`.
+   */
   limit?: number;
   offset?: number;
   aggregation_data?: AggregationType;
@@ -301,6 +461,8 @@ export enum ContentType {
   csv = "csv",
   sqlite = "sqlite",
   parquet = "parquet",
+  /** dmart 1.5.6+: an upload of unknown or octet-stream type. */
+  binary = "binary",
 }
 
 export enum ContentTypeMedia {
@@ -395,13 +557,41 @@ export type ActionRequest = {
 };
 
 export type ApiQueryResponse = ApiResponse & {
-  attributes: { total: number; returned: number };
+  attributes: {
+    total: number;
+    returned: number;
+    /**
+     * Set when the server capped the count (QUERY_TOTAL_CAP): `total` is
+     * then a lower bound, not the exact number of matches.
+     */
+    total_is_lower_bound?: boolean;
+  };
 };
+
+/** POST /managed/csv?preview=1: what the export would hold. */
+export type CsvPreviewResponse = ApiResponse & {
+  attributes: {
+    exported: number;
+    limit: number;
+    truncated: boolean;
+    total?: number;
+    total_is_lower_bound?: boolean;
+    reason?: string;
+    message: string;
+  };
+};
+
+export interface CsvOptions {
+  /** Ask what the CSV would hold instead of the CSV itself. */
+  preview?: boolean;
+}
 
 export interface ResourcesFromCSVRequest {
     space_name: string,
     subpath: string,
     isUpdate?: boolean,
+    /** Start at this row (1-based) of the file, to resume an upload. */
+    firstRow?: number,
     resourceType: ResourceType,
     schema: string,
     payload: File,
@@ -414,7 +604,8 @@ export interface RetrieveEntryRequest {
     shortname: string,
     retrieve_json_payload: boolean,
     retrieve_attachments: boolean,
-    validate_schema: boolean|null,
+    /** @deprecated dmart ignores it; no longer sent. */
+    validate_schema?: boolean|null,
 }
 
 export interface UploadWithPayloadRequest {
@@ -424,16 +615,6 @@ export interface UploadWithPayloadRequest {
     resource_type: ResourceType,
     payload_file: File,
     attributes?: Record<string, any> | null,
-}
-
-export interface FetchDataAssetRequest {
-    resourceType: string,
-    dataAssetType: string,
-    spaceName: string,
-    subpath: string,
-    shortname: string,
-    query_string?: string,
-    filter_data_assets?: string[]
 }
 
 export interface GetChildrenRequest {

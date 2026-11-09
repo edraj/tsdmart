@@ -1,3 +1,89 @@
+## 5.10.0
+
+**Compatibility:** requires csdmart ≥ 1.6.12 (`getClientConfig` and
+`getPermissions` need it; `getPermissions` falls back on older servers). A
+top-level `shortname` on sign-up and the username rule in the client config
+need ≥ 1.7.9. Aligned with csdmart 1.7.10.
+
+### Added
+
+- **`passwordResetConfirm({otp, password, shortname | email | msisdn})`**
+  posts `user/password-reset-confirm`, the second half of the reset flow
+  after `otpRequest({purpose: OtpPurpose.reset, ...})`.
+- **`getClientConfig()`** reads `GET public/client-config` and sends no
+  token, even when one is stored, so a stale one can't get in the way:
+  OTP length, resend delay and lifetime, upload and query limits, the request
+  timeout, and whether custom password and username rules apply, with their
+  hints. Typed as `ClientConfig`.
+- **Device sign-in.** `login(shortname, password, {otp, device_id})` covers
+  the two-step sign-in: an admin's password sign-in (dmart 1.6.6+) and the
+  first sign-in from a new device (1.7.2+) answer `OTP_NEEDED` (115) and send
+  a code, and the client signs in again with the same password, the same
+  `device_id` and the `otp`. `Dmart.setDeviceId(id)` sends `X-DeviceId` on
+  `login` and `loginBy`; a `device_id` in the body wins. dmart 1.7.2+ refuses
+  a mobile sign-in that names no device.
+- **`DmartErrorCode`**: the codes clients branch on, with dmart's integers:
+  `INVALID_USERNAME_AND_PASS` 10, `USER_ISNT_VERIFIED` 11, `SESSION` 50,
+  `PASSWORD_RESET_ERROR` 102, `OTP_RESEND_BLOCKED` 103,
+  `USER_ACCOUNT_LOCKED` 110, `OTP_NEEDED` 115, `MISSING_DATA` 202,
+  `INVALID_ROUTE` 230, `INVALID_TICKET_STATUS` 300, `OTP_INVALID` 307,
+  `OTP_EXPIRED` 308, `SHORTNAME_ALREADY_EXIST` 400, `NOT_ALLOWED` 401,
+  `INVALID_DATA` 402, `CONFLICT` 409, `DATA_SHOULD_BE_UNIQUE` 415,
+  `PASSWORD_HASHING_BUSY` 503 and `REQUEST_TIMEOUT` 504. pydmart and
+  flutterdmart carry the same set under the same name. **`ErrorType`** lists the `error.type` values, including the new
+  `server`.
+- **`createUser({shortname?, attributes})`** (`CreateUserRequest`): a
+  top-level `shortname` is the username the registrant chose, or `"auto"`
+  (dmart 1.7.9+). Since dmart 1.7.10 open registration always needs
+  `attributes.email_otp` / `msisdn_otp`, from `otpRequest` with purpose
+  `register`. An `ActionRequestRecord` is still accepted, but its `shortname`
+  is now honoured by the server as the chosen username.
+- **`confirmOtp`** takes `password` or `current_code`. Changing an account's
+  email or phone (dmart 1.6.7+) needs the password, or, on an account without
+  one, a verify-contact code sent to the address it already has.
+- **`csv(query, {preview: true})`** asks `managed/csv?preview=1` what the
+  file would hold (`CsvPreviewResponse`). **`resourcesFromCsv`** takes
+  `firstRow` (`?first_row=N`) to resume an upload.
+- `ApiQueryResponse.attributes.total_is_lower_bound`: set when the server
+  capped the count, so `total` is a lower bound.
+- `UserType.admin`, `ContentType.binary`, `HealthType`, and
+  `SpaceHealthResponse`.
+
+### Changed
+
+- **`getSpaceHealth(space, healthType = HealthType.soft)`** calls
+  `managed/health/{soft|hard|all}/{space}` and is typed with the checks the
+  server returns. `healthType` takes a `HealthType` or its string, so a typo
+  fails to compile. Global admins only.
+- **`csv()` keeps the caller's sort and leaves their query object alone.** It
+  used to force `sort_by: "created_at"` and rewrite `sort_type` and `subpath`
+  on the object passed in. `created_at` is now only the default when the
+  query names no order.
+- `QueryRequest.validate_schema` and `RetrieveEntryRequest.validate_schema`
+  are deprecated (dmart ignores them), and `retrieveEntry` no longer sends
+  `validate_schema`. `QueryRequest.limit` documents that leaving it out gets
+  the server's default.
+- `updateUser` documents that a password change needs `old_password`.
+
+### Fixed
+
+- **`csv()` resolves to the CSV text and is typed `Promise<string>`.** dmart
+  answers `managed/csv` with the file itself (`text/csv`), but `csv()` was
+  typed as a query response and asked axios for JSON; the text only survived
+  because axios falls back to a string when parsing fails. It now asks for
+  text. A refusal still rejects with dmart's JSON error in
+  `error.response.data`. `csv(query, {preview: true})` is unchanged.
+- `getSpaceHealth` called `managed/health/{space}`, a route csdmart never
+  served, so it always failed.
+
+### Removed
+
+- **`userReset`** (`user/reset`, dropped from csdmart in June 2026) and
+  **`fetchDataAsset`** (`managed/data-asset`, which csdmart never served),
+  along with `FetchDataAssetRequest`. Both always failed against csdmart. Use
+  `otpRequest` purpose `reset` plus `passwordResetConfirm` instead of
+  `userReset`.
+
 ## 5.9.0
 
 - **`getPermissions()` reads the permission map from its own route.** dmart

@@ -16,34 +16,35 @@ make sure you define `axiosDmartInstance` with your axios instance before import
 * `setHeaders(headers: Record<string, string>)` - Sets the headers used by the Dmart instance.
 * `getToken() -> string | null` - Gets the token used by the Dmart instance.
 * `setToken(token: string)` - Sets the token used by the Dmart instance.
-* `login(shortname: string, password: string) -> Promise<LoginResponse>` - Performs a login action (shortname).
+* `setDeviceId(deviceId: string | null)` / `getDeviceId()` - The device this client signs in from, sent as `X-DeviceId` on `login`/`loginBy` (a body `device_id` wins). dmart 1.7.2+ requires a device for mobile accounts.
+* `login(shortname: string, password: string, options?: {otp?, device_id?}) -> Promise<LoginResponse>` - Performs a login action (shortname). When it answers `OTP_NEEDED` (115), a code was sent: call again with the same password and `device_id` plus `{otp}`. `USER_ISNT_VERIFIED` (11) means the email/phone named is not verified. See `DmartErrorCode`.
 * `loginBy(credentials: dict, password: string) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
 * `otpRequest(request: SendOTPRequest, acceptLanguage: string | null = null) -> Promise<ApiResponse>` - Requests an OTP (One Time Password) for the given `purpose` (`login`, `reset`, `register`, or `verify-contact`), e.g. `Dmart.otpRequest({email: 'john_doe@example.com', purpose: OtpPurpose.login})`.
-* `confirmOtp(request: ConfirmOTPRequest) -> Promise<ApiResponse>` - Confirms an OTP code to verify a user's email/msisdn (call after `otpRequest` with purpose `verify-contact`).
-* `userReset(shortname: string) -> Promise<ApiResponse>` - Resets the user password by sending an OTP to the user's email.
+* `confirmOtp(request: ConfirmOTPRequest) -> Promise<ApiResponse>` - Confirms an OTP code to verify a user's email/msisdn (call after `otpRequest` with purpose `verify-contact`). Changing the address also needs `password`, or `current_code` on an account without one.
+* `passwordResetConfirm(request: PasswordResetConfirmRequest) -> Promise<ApiResponse>` - Sets a new password with a code from `otpRequest` purpose `reset`: `{otp, password, shortname | email | msisdn}`.
 * `validatePassword(password: string) -> Promise<ApiResponse>` - Validates the password.
-* `createUser(request: ActionRequestRecord) -> Promise<ActionResponse>` - Creates a new user.
+* `createUser(request: CreateUserRequest) -> Promise<ActionResponse>` - Registers a new user: `{shortname?: string | "auto", attributes: {email|msisdn, password, email_otp|msisdn_otp, ...}}`. Codes come from `otpRequest` purpose `register`.
 * `updateUser(request: ActionRequestRecord) -> Promise<ActionResponse>` - Updates an existing user.
 * `checkExisting(prop: string, value: string) -> Promise<ResponseEntry>` - Checks if a user exists.
 * `getProfile() -> Promise<ProfileResponse>` - Gets the profile of the current user.
 * `getPermissions() -> Promise<Record<string, Permission>>` - Gets the current user's permission map (`GET /user/permissions`, or the profile's copy on a server without that route) and stores it in `localStorage["permissions"]`.
 * `query(query: QueryRequest) -> Promise<ApiQueryResponse | null>` - Performs a query action.
-* `csv(query: any) -> Promise<ApiQueryResponse>` - Query the entries as csv file.
-* `space(action: ActionRequest) -> Promise<ActionResponse>` - Performs actions on spaces.
+* `csv(query: QueryRequest, options?: {preview?: boolean}) -> Promise<string | CsvPreviewResponse>` - Exports the entries as CSV and resolves to the CSV text; `preview: true` returns what the file would hold instead.
+* `resourcesFromCsv(request: ResourcesFromCSVRequest) -> Promise<ApiResponse>` - Creates or updates entries from a CSV file; `firstRow` resumes at a row.
 * `request(action: ActionRequest) -> Promise<ActionResponse>` - Performs a request action.
 * `retrieveEntry(request: RetrieveEntryRequest, scope: string = "managed") -> Promise<ResponseEntry | null>` - Performs a retrieve action.
 * `uploadWithPayload(request: UploadWithPayloadRequest, scope: string = "managed") -> Promise<ApiResponse>` - Uploads a file with a payload.
-* `fetchDataAsset(request: FetchDataAssetRequest) -> Promise<any>` - Fetches a data asset.
 * `getSpaces() -> Promise<ApiResponse | null>` - Gets the spaces (user query).
 * `getChildren(request: GetChildrenRequest) -> Promise<ApiResponse | null>` - Gets the children of a space (user query).
 * `getAttachmentUrl(request: GetAttachmentURLRequest, scope: string = "managed") -> string` - Constructs the URL of an attachment.
-* `getSpaceHealth(space_name: string) -> Promise<ApiQueryResponse & { attributes: { folders_report: Object } }>` - Gets the health check of a space.
+* `getSpaceHealth(space_name: string, health_type: HealthType | "soft" | "hard" | "all" = HealthType.soft) -> Promise<SpaceHealthResponse>` - Runs a space's health checks (`soft`, `hard` or `all`). Global admins only.
 * `getPayload(request: GetPayloadRequest, scope: string = "managed") -> Promise<any>` - Gets the payload of a resource.
 * `progressTicket(request: ProgressTicketRequest) -> Promise<ApiQueryResponse & { attributes: { folders_report: Object } }>` - Performs a progress ticket action.
 * `submit(request: SubmitRequest) -> Promise<any>` - Submits a record (log/feedback) to Dmart.
 * `getManifest() -> Promise<any>` - Gets the manifest of the current instance.
 * `getSettings() -> Promise<any>` - Gets the settings of the current instance.
+* `getClientConfig() -> Promise<ClientConfigResponse>` - Gets the settings a client should follow (OTP length/timing, query limits, password and username rules). No sign-in needed; dmart 1.6.12+.
 
 # Usage
 
