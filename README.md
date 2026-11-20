@@ -19,6 +19,7 @@ make sure you define `axiosDmartInstance` with your axios instance before import
 * `setDeviceId(deviceId: string | null)` / `getDeviceId()` - The device this client signs in from, sent as `X-DeviceId` on `login`/`loginBy` (a body `device_id` wins). dmart 1.7.2+ requires a device for mobile accounts.
 * `login(shortname: string, password: string, options?: {otp?, device_id?}) -> Promise<LoginResponse>` - Performs a login action (shortname). When it answers `OTP_NEEDED` (115), a code was sent: call again with the same password and `device_id` plus `{otp}`. `USER_ISNT_VERIFIED` (11) means the email/phone named is not verified. See `DmartErrorCode`.
 * `loginBy(credentials: dict, password: string) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
+* `loginClientCredentials(clientId: string, clientSecret: string, options?: {resource?, tokenUrl?}) -> Promise<ClientCredentialsToken>` - Signs a service in with its own token (OAuth 2 `client_credentials` at `oidc/token`, dmart 1.8.0+) instead of a bot's password; its integration record in `management/integrations` is the client. The token is renewed shortly before it expires, so a long-running service needs nothing else. `resource` asks for a token addressed to one service (dmart's own API refuses it). A refusal throws with the endpoint's OAuth error (`invalid_client: ...`). `setToken`, `clearToken`, a password login or `logout` ends the renewal.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
 * `otpRequest(request: SendOTPRequest, acceptLanguage: string | null = null) -> Promise<ApiResponse>` - Requests an OTP (One Time Password) for the given `purpose` (`login`, `reset`, `register`, or `verify-contact`), e.g. `Dmart.otpRequest({email: 'john_doe@example.com', purpose: OtpPurpose.login})`.
 * `confirmOtp(request: ConfirmOTPRequest) -> Promise<ApiResponse>` - Confirms an OTP code to verify a user's email/msisdn (call after `otpRequest` with purpose `verify-contact`). Changing the address also needs `password`, or `current_code` on an account without one.
@@ -107,6 +108,15 @@ loginBy({email: 'john_doe@example.com'}, 'securePassword123');
 
 loginBy({msisdn: '1234567890'}, 'securePassword123');
 ```
+
+* Sign a service in with its own token (dmart 1.8.0+), for a Node service:
+
+```ts
+await Dmart.loginClientCredentials(process.env.DMART_CLIENT_ID!, process.env.DMART_CLIENT_SECRET!);
+const spaces = await Dmart.getSpaces();
+```
+
+Don't use it in a browser or a mobile app: a client secret there is a secret anyone can read.
 
 * Get user profile
 
