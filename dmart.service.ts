@@ -14,6 +14,8 @@ import type {
     ApiQueryResponse,
     ApiResponse,
     ClientConfigResponse,
+    ClientCredentialsOptions,
+    ClientCredentialsToken,
     ConfirmOTPRequest,
     CreateUserRequest,
     CsvOptions,
@@ -47,6 +49,17 @@ export class Dmart {
 
     // Sent as X-DeviceId on sign-in when set (see setDeviceId).
     private static deviceId: string | null = null;
+
+    // client_credentials sign-in (loginClientCredentials): what to ask the
+    // token endpoint again, when (Date.now()), and the renewal in flight.
+    private static clientCredentials: {
+        clientId: string;
+        clientSecret: string;
+        resource?: string;
+        tokenUrl: string;
+    } | null = null;
+    private static renewAt = Number.POSITIVE_INFINITY;
+    private static renewal: Promise<unknown> | null = null;
 
     /**
      * Sets the Axios instance to be used for all HTTP requests
@@ -114,6 +127,7 @@ export class Dmart {
      * @param token - The JWT token to use for authentication
      */
     public static setToken(token: string) {
+        Dmart.endClientCredentials();
         headers["Authorization"] = `Bearer ${token}`;
     }
 
@@ -123,7 +137,91 @@ export class Dmart {
      * session without hitting the logout endpoint.
      */
     public static clearToken() {
+        Dmart.endClientCredentials();
         delete headers["Authorization"];
+    }
+
+    /**
+     * Signs a service in with its own token instead of a bot's password
+     * (OAuth 2 `client_credentials`, dmart 1.8.0+): its integration record in
+     * `management/integrations` is the client. The token is kept like a
+     * login's, and a request made when less than min(30 s, half its
+     * lifetime) remains gets a new one first, so a long-running service needs
+     * nothing else; concurrent requests share one renewal. Setting or
+     * clearing the token, a password login or {@link logout} ends that.
+     * @param clientId - The integration record's shortname
+     * @param clientSecret - One of its secrets
+     * @param options - `resource` for a token addressed to one service;
+     *   `tokenUrl` when the token endpoint isn't `oidc/token` under the base URL
+     * @returns The token endpoint's answer
+     * @throws Error with the endpoint's OAuth error as its message
+     *   (`invalid_client: ...`) and `status`, when it refuses
+     */
+    public static async loginClientCredentials(
+        clientId: string,
+        clientSecret: string,
+        options: ClientCredentialsOptions = {},
+    ): Promise<ClientCredentialsToken> {
+        const credentials = {
+            clientId,
+            clientSecret,
+            tokenUrl: options.tokenUrl ?? "oidc/token",
+            ...(options.resource ? {resource: options.resource} : {}),
+        };
+        await Dmart.renewal?.catch(() => undefined);
+        const answer = await Dmart.fetchClientToken(credentials);
+        Dmart.clientCredentials = credentials;
+        return answer;
+    }
+
+    // The axios instance, after renewing a client-credentials token that is
+    // due: every call goes through here, so it sends the current token.
+    private static async http(): Promise<AxiosInstance> {
+        const credentials = Dmart.clientCredentials;
+        if (credentials && Date.now() >= Dmart.renewAt) {
+            Dmart.renewal ??= Dmart.fetchClientToken(credentials).finally(() => { Dmart.renewal = null; });
+            await Dmart.renewal;
+        }
+        return Dmart.axiosDmartInstance;
+    }
+
+    private static async fetchClientToken(credentials: {
+        clientId: string; clientSecret: string; resource?: string; tokenUrl: string;
+    }): Promise<ClientCredentialsToken> {
+        const form = new URLSearchParams({
+            grant_type: "client_credentials",
+            client_id: credentials.clientId,
+            client_secret: credentials.clientSecret,
+        });
+        if (credentials.resource) form.set("resource", credentials.resource);
+        // Straight to the instance, not through http(): this is the renewal.
+        const {status, data} = await Dmart.axiosDmartInstance.post(
+            credentials.tokenUrl,
+            form.toString(),
+            {
+                headers: {"Content-Type": "application/x-www-form-urlencoded"},
+                validateStatus: () => true,
+            }
+        );
+        // The token endpoint answers OAuth's own error shape, not dmart's
+        // envelope: {"error": "invalid_client", "error_description": ...}.
+        if (status >= 400 || !data?.access_token) {
+            const message = data?.error
+                ? `${data.error}: ${data.error_description ?? ""}`
+                : "client_credentials sign-in failed";
+            throw Object.assign(new Error(message), {status, response: {status, data}});
+        }
+        headers["Authorization"] = `Bearer ${data.access_token}`;
+        const seconds = typeof data.expires_in === "number" ? data.expires_in : 0;
+        Dmart.renewAt = seconds > 0
+            ? Date.now() + (seconds - Math.min(30, seconds / 2)) * 1000
+            : Number.POSITIVE_INFINITY;
+        return data as ClientCredentialsToken;
+    }
+
+    private static endClientCredentials() {
+        Dmart.clientCredentials = null;
+        Dmart.renewAt = Number.POSITIVE_INFINITY;
     }
 
     /**
@@ -187,13 +285,14 @@ export class Dmart {
         const body: Record<string, string> = {shortname, password};
         if (options.otp) body["otp"] = options.otp;
         if (options.device_id) body["device_id"] = options.device_id;
-        const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
+        const response = await (await Dmart.http()).post<LoginResponse>(
             'user/login',
             body,
             {headers: Dmart.loginHeaders()}
         );
         const data: LoginResponse = response.data;
         if (data.status === Status.success && data.records.length > 0) {
+            Dmart.endClientCredentials();
             headers["Authorization"] = "Bearer " + data.records[0]?.attributes.access_token;
         }
         return data;
@@ -208,13 +307,14 @@ export class Dmart {
      * @returns Promise resolving to LoginResponse containing authentication data and access token
      */
     public static async loginBy(credentials: Record<string, string>, password: string) {
-        const response = await Dmart.axiosDmartInstance.post<LoginResponse>(
+        const response = await (await Dmart.http()).post<LoginResponse>(
             'user/login',
             {...credentials, password},
             {headers: Dmart.loginHeaders()}
         );
         const data: LoginResponse = response.data;
         if (data.status === Status.success && data.records.length > 0) {
+            Dmart.endClientCredentials();
             headers["Authorization"] =
                 "Bearer " + data.records[0]?.attributes.access_token;
         }
@@ -226,7 +326,7 @@ export class Dmart {
      * @returns Promise resolving to ApiResponse indicating logout status
      */
     public static async logout() {
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             'user/logout',
             {},
             {headers}
@@ -254,7 +354,7 @@ export class Dmart {
      * @returns Promise resolving to ActionResponse with creation result
      */
     public static async createUser(request: CreateUserRequest | ActionRequestRecord) {
-        const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
+        const {data} = await (await Dmart.http()).post<ActionResponse>(
             'user/create',
             request,
             {headers}
@@ -275,7 +375,7 @@ export class Dmart {
      * @returns Promise resolving to ActionResponse with update result
      */
     public static async updateUser(request: ActionRequestRecord) {
-        const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
+        const {data} = await (await Dmart.http()).post<ActionResponse>(
             'user/profile',
             request,
             {headers}
@@ -290,7 +390,7 @@ export class Dmart {
      * @returns Promise resolving to ResponseEntry indicating if the value exists
      */
     public static async checkExisting(prop: string, value: string) {
-        const {data} = await Dmart.axiosDmartInstance.get<ResponseEntry>(
+        const {data} = await (await Dmart.http()).get<ResponseEntry>(
             `user/check-existing?${prop}=${value}`,
             {headers}
         );
@@ -302,7 +402,7 @@ export class Dmart {
      * @returns Promise resolving to ProfileResponse containing user profile data, permissions, and roles
      */
     public static async getProfile() {
-        const {data} = await Dmart.axiosDmartInstance.get<ProfileResponse>('user/profile', {
+        const {data} = await (await Dmart.http()).get<ProfileResponse>('user/profile', {
             headers,
         });
         if (typeof localStorage !== "undefined" && data.status === "success") {
@@ -331,7 +431,7 @@ export class Dmart {
     public static async getPermissions(): Promise<Record<string, Permission>> {
         let map: Record<string, Permission> | undefined;
         try {
-            const {data} = await Dmart.axiosDmartInstance.get<PermissionsResponse>("user/permissions", {headers});
+            const {data} = await (await Dmart.http()).get<PermissionsResponse>("user/permissions", {headers});
             map = data?.attributes?.permissions;
         } catch (error) {
             const response = (error as {
@@ -365,7 +465,7 @@ export class Dmart {
             query.sort_by = query.sort_by || "created_at";
         }
         query.subpath = query.subpath.replace(/\/+/g, "/");
-        const {data} = await Dmart.axiosDmartInstance.post<ApiQueryResponse>(
+        const {data} = await (await Dmart.http()).post<ApiQueryResponse>(
             `${scope}/query`,
             query,
             {headers}
@@ -396,7 +496,7 @@ export class Dmart {
             subpath: query.subpath.replace(/\/+/g, "/"),
         };
         if (options.preview) {
-            const {data} = await Dmart.axiosDmartInstance.post<CsvPreviewResponse>(
+            const {data} = await (await Dmart.http()).post<CsvPreviewResponse>(
                 'managed/csv?preview=1',
                 body,
                 {headers}
@@ -404,7 +504,7 @@ export class Dmart {
             return data;
         }
         try {
-            const {data} = await Dmart.axiosDmartInstance.post<string>(
+            const {data} = await (await Dmart.http()).post<string>(
                 'managed/csv',
                 body,
                 {headers, responseType: "text"}
@@ -451,7 +551,7 @@ export class Dmart {
 
         const multipartHeaders = {...headers, "Content-Type": "multipart/form-data"};
 
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             csvUrl,
             formdata,
             {headers: multipartHeaders, params}
@@ -466,7 +566,7 @@ export class Dmart {
     //  * @returns Promise resolving to ActionResponse with operation result
     //  */
     // public static async space(action: ActionRequest): Promise<ActionResponse> {
-    //     const {data} = await Dmart.axiosDmartInstance.post<ActionResponse>(
+    //     const {data} = await (await Dmart.http()).post<ActionResponse>(
     //         'managed/space',
     //         action,
     //         {headers}
@@ -480,7 +580,7 @@ export class Dmart {
      * @returns Promise resolving to ActionResponse with request result
      */
     public static async request(action: ActionRequest): Promise<ActionResponse> {
-        const res = await Dmart.axiosDmartInstance.post<ActionResponse>('managed/request', action, {
+        const res = await (await Dmart.http()).post<ActionResponse>('managed/request', action, {
             headers,
         });
         return res?.data;
@@ -499,7 +599,7 @@ export class Dmart {
         scope ??= Dmart.defaultScope();
         if (!request.subpath || request.subpath === "/") request.subpath = "__root__";
         const url = `${scope}/entry/${request.resource_type}/${request.space_name}/${request.subpath}/${request.shortname}?retrieve_json_payload=${request.retrieve_json_payload}&retrieve_attachments=${request.retrieve_attachments}`;
-        const {data} = await Dmart.axiosDmartInstance.get<ResponseEntry>(
+        const {data} = await (await Dmart.http()).get<ResponseEntry>(
             `${url.replace(/\/+/g, "/")}`,
             {headers}
         );
@@ -544,7 +644,7 @@ export class Dmart {
 
         const _headers = {...headers, "Content-Type": "multipart/form-data"};
 
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             `${scope}/resource_with_payload`,
             form_data,
             {headers: _headers}
@@ -625,7 +725,7 @@ export class Dmart {
         space_name: string,
         health_type: HealthType | `${HealthType}` = HealthType.soft
     ) {
-        const {data} = await Dmart.axiosDmartInstance.get<SpaceHealthResponse>(
+        const {data} = await (await Dmart.http()).get<SpaceHealthResponse>(
             `managed/health/${health_type}/${space_name}`,
             {headers}
         );
@@ -649,7 +749,7 @@ export class Dmart {
             url += `.${request.schemaShortname}`;
         }
         url += `.${request.ext}`;
-        const {data} = await Dmart.axiosDmartInstance.get<any>(
+        const {data} = await (await Dmart.http()).get<any>(
             url,
             {headers}
         );
@@ -671,7 +771,7 @@ export class Dmart {
         if (request.comment) {
             payload['comment'] = request.comment;
         }
-        const {data} = await Dmart.axiosDmartInstance.put<
+        const {data} = await (await Dmart.http()).put<
             ApiQueryResponse & { attributes: { folders_report: Record<string, unknown> } }
         >(
             `managed/progress-ticket/${request.space_name}/${request.subpath}/${request.shortname}/${request.action}`,
@@ -697,7 +797,7 @@ export class Dmart {
             url += `/${request.workflowShortname}`;
         }
         url += `/${request.schemaShortname}/${request.subpath}`;
-        const {data} = await Dmart.axiosDmartInstance.post(
+        const {data} = await (await Dmart.http()).post(
             url,
             request.record,
             {headers}
@@ -710,7 +810,7 @@ export class Dmart {
      * @returns Promise resolving to manifest data
      */
     public static async getManifest() {
-        const {data} = await Dmart.axiosDmartInstance.get<any>('info/manifest', {
+        const {data} = await (await Dmart.http()).get<any>('info/manifest', {
             headers,
         });
         return data;
@@ -721,7 +821,7 @@ export class Dmart {
      * @returns Promise resolving to settings data
      */
     public static async getSettings() {
-        const {data} = await Dmart.axiosDmartInstance.get<any>('info/settings', {
+        const {data} = await (await Dmart.http()).get<any>('info/settings', {
             headers,
         });
         return data;
@@ -737,7 +837,7 @@ export class Dmart {
      */
     public static async getClientConfig() {
         const {Authorization: _token, ...publicHeaders} = headers;
-        const {data} = await Dmart.axiosDmartInstance.get<ClientConfigResponse>('public/client-config', {
+        const {data} = await (await Dmart.http()).get<ClientConfigResponse>('public/client-config', {
             headers: publicHeaders,
         });
         return data;
@@ -753,7 +853,7 @@ export class Dmart {
      *   `version` and `type` ("hook" | "api").
      */
     public static async getPlugins() {
-        const {data} = await Dmart.axiosDmartInstance.get<any>('info/plugins', {
+        const {data} = await (await Dmart.http()).get<any>('info/plugins', {
             headers,
         });
         return data;
@@ -775,7 +875,7 @@ export class Dmart {
             requestHeaders['Accept-Language'] = acceptLanguage;
         }
 
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             'user/otp-request',
             request,
             {headers: requestHeaders}
@@ -793,7 +893,7 @@ export class Dmart {
      * @returns Promise resolving to ApiResponse with the verification result
      */
     public static async confirmOtp(request: ConfirmOTPRequest) {
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             'user/verify-contact',
             request,
             {headers}
@@ -810,7 +910,7 @@ export class Dmart {
      * @returns Promise resolving to ApiResponse with the reset result
      */
     public static async passwordResetConfirm(request: PasswordResetConfirmRequest) {
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             'user/password-reset-confirm',
             request,
             {headers}
@@ -824,7 +924,7 @@ export class Dmart {
      * @returns Promise resolving to ApiResponse with validation result
      */
     public static async validatePassword(password: string) {
-        const {data} = await Dmart.axiosDmartInstance.post<ApiResponse>(
+        const {data} = await (await Dmart.http()).post<ApiResponse>(
             'user/validate_password',
             {password},
             {headers}
