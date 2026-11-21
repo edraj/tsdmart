@@ -1,4 +1,4 @@
-## Unreleased
+## 5.11.0
 
 **Compatibility:** `loginClientCredentials` needs csdmart ≥ 1.8.0; the rest is
 unchanged.
