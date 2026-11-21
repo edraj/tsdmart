@@ -1,3 +1,23 @@
+## 5.11.0
+
+**Compatibility:** `loginClientCredentials` needs csdmart ≥ 1.8.0; the rest is
+unchanged.
+
+### Added
+
+- **`loginClientCredentials(clientId, clientSecret, {resource, tokenUrl})`:**
+  a service signs in with its own token (OAuth 2 `client_credentials` at
+  `oidc/token`) instead of a bot's password. The token is kept like a
+  login's, and a call made when less than min(30 s, half its lifetime)
+  remains gets a new one first; concurrent calls share one renewal. A
+  refusal throws with the endpoint's OAuth error as the message
+  (`invalid_client: ...`) and its `status`. `setToken`, `clearToken`, a
+  password login or `logout` ends the renewal. For services only: a browser
+  or an app can't keep a client secret. Typed as `ClientCredentialsOptions`
+  and `ClientCredentialsToken`.
+- **`ResourceType`** gains `data_asset`, `lock`, `log`, `reply`, `share` and
+  `integration`, the types dmart has and the enum lacked.
+
 ## 5.10.0
 
 **Compatibility:** requires csdmart ≥ 1.6.12 (`getClientConfig` and

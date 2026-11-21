@@ -168,6 +168,30 @@ export interface CreateUserRequest {
 }
 
 /** Options for a password sign-in. */
+/**
+ * Options for {@link Dmart.loginClientCredentials}.
+ */
+export interface ClientCredentialsOptions {
+  /**
+   * Ask for a token addressed to one service (RFC 8707). dmart's own API
+   * refuses such a token.
+   */
+  resource?: string;
+  /**
+   * The token endpoint; `oidc/token` under the base URL when not set.
+   */
+  tokenUrl?: string;
+}
+
+/**
+ * The token endpoint's answer to a `client_credentials` request.
+ */
+export interface ClientCredentialsToken {
+  access_token: string;
+  token_type: string;
+  expires_in?: number;
+}
+
 export interface LoginOptions {
   /**
    * The code, for the second step after an `OTP_NEEDED` (115) answer. Send
@@ -444,6 +468,12 @@ export enum ResourceType {
   csv = "csv",
   sqlite = "sqlite",
   parquet = "parquet",
+  data_asset = "data_asset",
+  lock = "lock",
+  log = "log",
+  reply = "reply",
+  share = "share",
+  integration = "integration",
 }
 
 export enum ContentType {
