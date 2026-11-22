@@ -17,8 +17,12 @@ make sure you define `axiosDmartInstance` with your axios instance before import
 * `getToken() -> string | null` - Gets the token used by the Dmart instance.
 * `setToken(token: string)` - Sets the token used by the Dmart instance.
 * `setDeviceId(deviceId: string | null)` / `getDeviceId()` - The device this client signs in from, sent as `X-DeviceId` on `login`/`loginBy` (a body `device_id` wins). dmart 1.7.2+ requires a device for mobile accounts.
-* `login(shortname: string, password: string, options?: {otp?, device_id?}) -> Promise<LoginResponse>` - Performs a login action (shortname). When it answers `OTP_NEEDED` (115), a code was sent: call again with the same password and `device_id` plus `{otp}`. `USER_ISNT_VERIFIED` (11) means the email/phone named is not verified. See `DmartErrorCode`.
-* `loginBy(credentials: dict, password: string) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
+* `login(shortname: string, password: string, options?: {otp?, device_id?, webauthn?, totp?, recovery_code?}) -> Promise<LoginResponse>` - Performs a login action (shortname). When it answers `OTP_NEEDED` (115), a code was sent: call again with the same password and `device_id` plus `{otp}`. For an account with a security key or an authenticator app (dmart 1.8.1+), `OTP_NEEDED` carries the step it needs instead, which `secondFactorStep(error)` reads: call again with the password and `{webauthn}`, `{totp}` or `{recovery_code}`. `USER_ISNT_VERIFIED` (11) means the email/phone named is not verified. See `DmartErrorCode`.
+* `loginBy(credentials: dict, password: string, options?) -> Promise<LoginResponse>` - Performs a login action but altering the default identifier that you can customise.
+* `loginWithSecurityKey(shortname, password, options?) -> Promise<LoginResponse>` - In a browser (dmart 1.8.1+): the password, then the account's security key, in one call. An account without a key signs in with the password alone; any other second step throws as `login` does.
+* `loginWithKeyAlone(account: {shortname} | {email} | {msisdn}, answer?) -> Promise<LoginResponse>` - Key-only sign-in (dmart 1.8.1+), for an account that turned it on: the key and its PIN, no password. `keyOnlyChallenge(account)` gives the challenge when you ask the key yourself.
+* `getSecondFactors()`, `passkeyProofChallenge()`, `passkeyRegisterChallenge(proof)`, `passkeyRegister(answer, name?)`, `passkeyRename(id, name)`, `passkeyRemove(id, proof)`, `newRecoveryCodes(proof)`, `setKeyOnly(enabled, proof)`, `totpBegin(proof)`, `totpConfirm(setupId, code)`, `totpRemove(proof)` - The signed-in account's security keys, authenticator app, key-only sign-in and recovery codes (dmart 1.8.1+). A change carries `proof`: the password, plus the key's answer to `passkeyProofChallenge()` once the account has a key, or the app's code with an app and no key.
+* `signChallenge(challenge)`, `makeKey(challenge)`, `keysSupported()`, `secondFactorStep(error)` - Browser helpers (also from `@edraj/tsdmart/webauthn`): ask the key for dmart's challenge and return the answer dmart takes.
 * `loginClientCredentials(clientId: string, clientSecret: string, options?: {resource?, tokenUrl?}) -> Promise<ClientCredentialsToken>` - Signs a service in with its own token (OAuth 2 `client_credentials` at `oidc/token`, dmart 1.8.0+) instead of a bot's password; its integration record in `management/integrations` is the client. The token is renewed shortly before it expires, so a long-running service needs nothing else. `resource` asks for a token addressed to one service (dmart's own API refuses it). A refusal throws with the endpoint's OAuth error (`invalid_client: ...`). `setToken`, `clearToken`, a password login or `logout` ends the renewal.
 * `logout() -> Promise<ApiResponse>` - Performs a logout action.
 * `otpRequest(request: SendOTPRequest, acceptLanguage: string | null = null) -> Promise<ApiResponse>` - Requests an OTP (One Time Password) for the given `purpose` (`login`, `reset`, `register`, or `verify-contact`), e.g. `Dmart.otpRequest({email: 'john_doe@example.com', purpose: OtpPurpose.login})`.
@@ -107,6 +111,24 @@ const response = await Dmart.login('john_doe', 'securePassword123');
 loginBy({email: 'john_doe@example.com'}, 'securePassword123');
 
 loginBy({msisdn: '1234567890'}, 'securePassword123');
+```
+
+* Sign in with a security key or an authenticator app (dmart 1.8.1+)
+
+```ts
+// In a browser: the password, then the key.
+await Dmart.loginWithSecurityKey('john_doe', 'securePassword123');
+
+// An authenticator app: the password, then its code.
+try {
+  await Dmart.login('john_doe', 'securePassword123');
+} catch (error) {
+  const step = secondFactorStep(error);
+  if (step?.factors.includes('totp')) await Dmart.login('john_doe', 'securePassword123', {totp: codeFromTheApp});
+}
+
+// Key-only sign-in, for an account that turned it on.
+await Dmart.loginWithKeyAlone({shortname: 'john_doe'});
 ```
 
 * Sign a service in with its own token (dmart 1.8.0+), for a Node service:

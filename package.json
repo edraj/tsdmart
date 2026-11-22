@@ -1,6 +1,6 @@
 {
   "name": "@edraj/tsdmart",
-  "version": "5.11.0",
+  "version": "5.12.0",
   "description": "A TypeScript implementation of the Dmart that depends on axios.",
   "author": "Kefah T. Issa",
   "email": "kefah.issa@gmail.com",
@@ -24,6 +24,11 @@
       "types": "./dist/dmart.service.d.ts",
       "import": "./dist/dmart.service.js",
       "default": "./dist/dmart.service.js"
+    },
+    "./webauthn": {
+      "types": "./dist/webauthn.d.ts",
+      "import": "./dist/webauthn.js",
+      "default": "./dist/webauthn.js"
     }
   },
   "files": [
