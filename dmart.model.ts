@@ -47,6 +47,14 @@ export enum DmartErrorCode {
   PASSWORD_RESET_ERROR = 102,
   USER_ACCOUNT_LOCKED = 110,
   OTP_NEEDED = 115,
+  /**
+   * An account with a security key or an authenticator app, on a path that
+   * can't do that step (a code alone, social sign-in), or an admin's key
+   * setup (dmart 1.8.1+).
+   */
+  SECOND_FACTOR_REQUIRED = 116,
+  /** The second step was refused: the key's answer, the app's code or the recovery code (1.8.1+). */
+  SECOND_FACTOR_INVALID = 117,
   NOT_ALLOWED = 401,
   // Codes
   OTP_RESEND_BLOCKED = 103,
@@ -203,6 +211,75 @@ export interface LoginOptions {
    * Overrides {@link Dmart.setDeviceId} for this call.
    */
   device_id?: string;
+  /**
+   * The second step for an account with a security key (dmart 1.8.1+): the
+   * key's answer to the challenge the password step returned
+   * ({@link SecondFactorStep}). See {@link signChallenge}.
+   */
+  webauthn?: KeyAnswer;
+  /** The second step for an account with an authenticator app: the app's code (1.8.1+). */
+  totp?: string;
+  /** Instead of the key or the app's code: one of the account's recovery codes (1.8.1+). */
+  recovery_code?: string;
+}
+
+/** A security key's answer, as dmart takes it: the challenge it answers and the PublicKeyCredential as JSON. */
+export interface KeyAnswer {
+  challenge_id: string;
+  credential: Record<string, unknown>;
+}
+
+/** A WebAuthn challenge from dmart: its id, and the options for `navigator.credentials`. */
+export interface KeyChallenge {
+  challenge_id: string;
+  options: Record<string, unknown>;
+}
+
+/**
+ * What a password sign-in asks next (dmart 1.8.1+): `error.info[0]` of an
+ * `OTP_NEEDED` (115) answer for an account with a second factor, or of a
+ * `SECOND_FACTOR_REQUIRED` (116) answer carrying an admin's key setup.
+ * Read it with {@link secondFactorStep}.
+ */
+export interface SecondFactorStep {
+  /** What the account may use: `passkey`, `totp`, `recovery`, or `passkey_setup`. */
+  factors: string[];
+  /** The challenge for the account's key, with `passkey` or `passkey_setup`. */
+  webauthn?: KeyChallenge;
+}
+
+/**
+ * The proof a change to an account's second factors carries: the password,
+ * and once the account has a key, that key's answer to a proof challenge
+ * ({@link Dmart.passkeyProofChallenge}); with an app and no key, the app's
+ * code. An account that signs in with its key alone proves itself with the key.
+ */
+export interface SecondFactorProof {
+  password?: string;
+  webauthn?: KeyAnswer;
+  totp?: string;
+}
+
+/** GET user/passkeys (dmart 1.8.1+): the account's second factors. */
+export interface SecondFactors {
+  passkeys: { id: string; name: string; domain: string; created_at: string; last_used_at?: string }[];
+  recovery_codes_left: number;
+  /** Whether the account may add a security key. */
+  may_add: boolean;
+  /** Whether it signs in with its key alone. */
+  key_only: boolean;
+  /** Whether it has an authenticator app, and since when. */
+  totp: boolean;
+  totp_added_at?: string;
+  /** Whether it may add an authenticator app. */
+  totp_may_add: boolean;
+}
+
+/** An authenticator app being added: the otpauth URI for the QR code, and the key as text. */
+export interface TotpSetup {
+  setup_id: string;
+  secret: string;
+  uri: string;
 }
 
 /** GET /public/client-config (dmart 1.6.12+): settings a client should follow. */

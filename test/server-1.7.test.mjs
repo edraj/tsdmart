@@ -259,8 +259,8 @@ describe("enums", () => {
     assert.equal(DmartErrorCode.INVALID_ROUTE, 230);
   });
 
-  test("DmartErrorCode carries the same 19 codes as pydmart and flutterdmart", () => {
+  test("DmartErrorCode carries the same 21 codes as pydmart and flutterdmart", () => {
     const names = Object.keys(DmartErrorCode).filter((k) => isNaN(Number(k)));
-    assert.equal(names.length, 19);
+    assert.equal(names.length, 21);
   });
 });

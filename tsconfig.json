@@ -26,7 +26,8 @@
   "include": [
     "index.ts",
     "dmart.model.ts",
-    "dmart.service.ts"
+    "dmart.service.ts",
+    "webauthn.ts"
   ],
   "exclude": [
     "node_modules",

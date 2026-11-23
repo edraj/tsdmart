@@ -23,6 +23,8 @@ import type {
     GetAttachmentURLRequest,
     GetChildrenRequest,
     GetPayloadRequest,
+    KeyAnswer,
+    KeyChallenge,
     LoginOptions,
     LoginResponse,
     PasswordResetConfirmRequest,
@@ -34,11 +36,21 @@ import type {
     ResourcesFromCSVRequest,
     ResponseEntry,
     RetrieveEntryRequest,
+    SecondFactorProof,
+    SecondFactors,
     SendOTPRequest,
     SpaceHealthResponse,
     SubmitRequest,
+    TotpSetup,
     UploadWithPayloadRequest,
 } from "./dmart.model.js";
+import {secondFactorStep, signChallenge} from "./webauthn.js";
+
+// An answer whose data is a top-level `attributes` object (user/passkeys/*, user/totp/*).
+type AttributesResponse<T> = ApiResponse & { attributes?: T };
+
+/** The name an account signs in with, as user/login takes it. */
+export type AccountName = { shortname: string } | { email: string } | { msisdn: string };
 
 
 // dmart's error code for a route the server does not have.
@@ -274,6 +286,10 @@ export class Dmart {
      * `OTP_NEEDED` (115) and send a code; call `login` again with the same
      * password, the same `device_id` and `{otp}`. A password sign-in that
      * names an unverified email or phone answers `USER_ISNT_VERIFIED` (11).
+     * An account with a security key or an authenticator app (dmart 1.8.1+)
+     * answers `OTP_NEEDED` with the step it needs ({@link secondFactorStep});
+     * call `login` again with the same password and `{webauthn}`, `{totp}` or
+     * `{recovery_code}`, or use {@link loginWithSecurityKey} in a browser.
      * See {@link DmartErrorCode}.
      * @param shortname - The user's shortname (username)
      * @param password - The user's password
@@ -282,9 +298,21 @@ export class Dmart {
      * @returns Promise resolving to LoginResponse containing authentication data and access token
      */
     public static async login(shortname: string, password: string, options: LoginOptions = {}) {
-        const body: Record<string, string> = {shortname, password};
+        return Dmart.signIn({shortname, password, ...Dmart.secondStep(options)});
+    }
+
+    // The second-step fields of a sign-in, as user/login takes them.
+    private static secondStep(options: LoginOptions): Record<string, unknown> {
+        const body: Record<string, unknown> = {};
         if (options.otp) body["otp"] = options.otp;
         if (options.device_id) body["device_id"] = options.device_id;
+        if (options.webauthn) body["webauthn"] = options.webauthn;
+        if (options.totp) body["totp"] = options.totp;
+        if (options.recovery_code) body["recovery_code"] = options.recovery_code;
+        return body;
+    }
+
+    private static async signIn(body: Record<string, unknown>) {
         const response = await (await Dmart.http()).post<LoginResponse>(
             'user/login',
             body,
@@ -299,26 +327,125 @@ export class Dmart {
     }
 
     /**
+     * Signs in an account whose second factor is a security key, in a browser
+     * (dmart 1.8.1+): the password, then the key's answer to the challenge the
+     * password returned, with the password again. An account without a key
+     * signs in with the first call. Any other second step (an authenticator
+     * app's code) throws as {@link login} does; {@link secondFactorStep} reads
+     * it, and `login` with `{totp}` or `{recovery_code}` finishes it.
+     */
+    public static async loginWithSecurityKey(shortname: string, password: string, options: LoginOptions = {}) {
+        try {
+            return await Dmart.login(shortname, password, options);
+        } catch (error) {
+            const step = secondFactorStep(error);
+            if (!step?.webauthn || !step.factors.includes("passkey")) throw error;
+            return Dmart.login(shortname, password, {...options, webauthn: await signChallenge(step.webauthn)});
+        }
+    }
+
+    /**
+     * Key-only sign-in's challenge for a name (dmart 1.8.1+), before there is
+     * a session. Every name gets one; only an account that turned key-only
+     * sign-in on gets one its key answers.
+     */
+    public static async keyOnlyChallenge(account: AccountName): Promise<KeyChallenge> {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<KeyChallenge>>(
+            'user/passkeys/login-options', account, {headers});
+        return data.attributes as KeyChallenge;
+    }
+
+    /**
+     * Key-only sign-in (dmart 1.8.1+): the account's key and its PIN, no
+     * password, for an account that turned it on ({@link setKeyOnly}). With
+     * no answer given, asks the key in this browser. A refusal throws with
+     * `SECOND_FACTOR_INVALID` (117), the same for every reason.
+     */
+    public static async loginWithKeyAlone(account: AccountName, answer?: KeyAnswer, options: LoginOptions = {}) {
+        const webauthn = answer ?? await signChallenge(await Dmart.keyOnlyChallenge(account));
+        return Dmart.signIn({...account, ...Dmart.secondStep(options), webauthn});
+    }
+
+    /** GET user/passkeys (dmart 1.8.1+): the signed-in account's second factors. */
+    public static async getSecondFactors(): Promise<SecondFactors> {
+        const {data} = await (await Dmart.http()).get<AttributesResponse<SecondFactors>>('user/passkeys', {headers});
+        return data.attributes as SecondFactors;
+    }
+
+    /** A proof challenge for the account's keys: what a change asks its key to sign ({@link SecondFactorProof}). */
+    public static async passkeyProofChallenge(): Promise<KeyChallenge> {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<KeyChallenge>>(
+            'user/passkeys/proof-options', {}, {headers});
+        return data.attributes as KeyChallenge;
+    }
+
+    /** The challenge for a new key, for `navigator.credentials.create` (see {@link makeKey}). */
+    public static async passkeyRegisterChallenge(proof: SecondFactorProof): Promise<KeyChallenge> {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<KeyChallenge>>(
+            'user/passkeys/register-options', proof, {headers});
+        return data.attributes as KeyChallenge;
+    }
+
+    /** The new key. The account's first second factor comes with ten recovery codes, shown once. */
+    public static async passkeyRegister(answer: KeyAnswer, name?: string) {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<{ id: string; name: string; recovery_codes?: string[] }>>(
+            'user/passkeys/register', {webauthn: answer, ...(name ? {name} : {})}, {headers});
+        return data.attributes!;
+    }
+
+    public static async passkeyRename(id: string, name: string) {
+        const {data} = await (await Dmart.http()).post<ApiResponse>('user/passkeys/rename', {id, name}, {headers});
+        return data;
+    }
+
+    /** Removes a key. Removing the account's last key ends its sessions, this one too. */
+    public static async passkeyRemove(id: string, proof: SecondFactorProof) {
+        const {data} = await (await Dmart.http()).post<ApiResponse>('user/passkeys/remove', {id, ...proof}, {headers});
+        return data;
+    }
+
+    /** Ten new recovery codes; the old set is void. */
+    public static async newRecoveryCodes(proof: SecondFactorProof): Promise<string[]> {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<{ recovery_codes: string[] }>>(
+            'user/passkeys/recovery-codes', proof, {headers});
+        return data.attributes?.recovery_codes ?? [];
+    }
+
+    /** Key-only sign-in on or off for the signed-in account (it needs a key). */
+    public static async setKeyOnly(enabled: boolean, proof: SecondFactorProof) {
+        const {data} = await (await Dmart.http()).post<ApiResponse>('user/passkeys/key-only', {enabled, ...proof}, {headers});
+        return data;
+    }
+
+    /** An authenticator app's setup: show `uri` as a QR code, or `secret` to type in. */
+    public static async totpBegin(proof: SecondFactorProof): Promise<TotpSetup> {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<TotpSetup>>('user/totp/begin', proof, {headers});
+        return data.attributes as TotpSetup;
+    }
+
+    /** Confirms the app with a code from it; the recovery codes when it is the account's first second factor. */
+    public static async totpConfirm(setupId: string, code: string): Promise<string[] | undefined> {
+        const {data} = await (await Dmart.http()).post<AttributesResponse<{ recovery_codes?: string[] }>>(
+            'user/totp/confirm', {setup_id: setupId, code}, {headers});
+        return data.attributes?.recovery_codes;
+    }
+
+    public static async totpRemove(proof: SecondFactorProof) {
+        const {data} = await (await Dmart.http()).post<ApiResponse>('user/totp/remove', proof, {headers});
+        return data;
+    }
+
+    /**
      * Authenticates a user with custom credentials and password. The
      * credentials may also carry `otp` (the second step after `OTP_NEEDED`,
      * 115) and `device_id`; see {@link login} for the two-step flow.
      * @param credentials - Object containing login credentials (e.g., email, msisdn, otp, device_id)
      * @param password - The user's password
+     * @param options - The second step's fields, as for {@link login}
      * @returns Promise resolving to LoginResponse containing authentication data and access token
      */
-    public static async loginBy(credentials: Record<string, string>, password: string) {
-        const response = await (await Dmart.http()).post<LoginResponse>(
-            'user/login',
-            {...credentials, password},
-            {headers: Dmart.loginHeaders()}
-        );
-        const data: LoginResponse = response.data;
-        if (data.status === Status.success && data.records.length > 0) {
-            Dmart.endClientCredentials();
-            headers["Authorization"] =
-                "Bearer " + data.records[0]?.attributes.access_token;
-        }
-        return data;
+    public static async loginBy(credentials: Record<string, string>, password: string, options: LoginOptions = {}) {
+        return Dmart.signIn({...credentials, password, ...Dmart.secondStep(options)});
     }
 
     /**
